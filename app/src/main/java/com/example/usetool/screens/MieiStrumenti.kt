@@ -6,12 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.usetool.components.BottomNavBar
 import com.example.usetool.viewModel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MieiStrumenti(navController: NavController, viewModel: UseToolViewModel) {
-    Scaffold(topBar = { TopAppBar(title = { Text("I miei strumenti") }) }) { padding ->
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("I miei strumenti") }) },
+        bottomBar = { BottomNavBar(navController) }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)

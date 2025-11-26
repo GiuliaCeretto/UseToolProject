@@ -6,13 +6,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.usetool.components.BottomNavBar
 import com.example.usetool.viewModel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InizioNoleggio(navController: NavController, viewModel: UseToolViewModel, toolId: String) {
     val tool = viewModel.tools.find { it.id == toolId }
-    Scaffold(topBar = { TopAppBar(title = { Text("Avvio noleggio") }) }) { padding ->
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("Avvio noleggio") }) },
+        bottomBar = { BottomNavBar(navController) }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)

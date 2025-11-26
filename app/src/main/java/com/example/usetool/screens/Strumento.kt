@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.usetool.components.BottomNavBar
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.viewModel.UseToolViewModel
 
@@ -15,7 +16,8 @@ fun Strumento(navController: NavController, viewModel: UseToolViewModel, id: Str
     val tool = viewModel.tools.find { it.id == id }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(tool?.name ?: "Strumento") }) }
+        topBar = { TopAppBar(title = { Text(tool?.name ?: "Strumento") }) },
+        bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         Column(
             modifier = Modifier

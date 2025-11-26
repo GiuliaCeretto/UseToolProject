@@ -15,4 +15,6 @@ sealed class NavRoutes(val route: String) {
     }
     object Ricerca : NavRoutes("ricerca")
     object Profilo : NavRoutes("profilo")
+
+    object Collegamento : NavRoutes("collegamento")
 }

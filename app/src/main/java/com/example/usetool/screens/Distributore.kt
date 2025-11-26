@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.usetool.components.BottomNavBar
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.viewModel.UseToolViewModel
 
@@ -13,7 +14,8 @@ import com.example.usetool.viewModel.UseToolViewModel
 @Composable
 fun Distributore(navController: NavController, viewModel: UseToolViewModel, id: String) {
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Distributore #$id") }) }
+        topBar = { TopAppBar(title = { Text("Distributore #$id") }) },
+        bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         Column(
             modifier = Modifier

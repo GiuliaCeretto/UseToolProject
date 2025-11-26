@@ -58,5 +58,10 @@ fun NavGraph(viewModel: UseToolViewModel) {
         composable(NavRoutes.Profilo.route) {
             Profilo(navController, viewModel)
         }
+
+        composable(NavRoutes.Collegamento.route) {
+            CollegamentoScreen(navController, viewModel)
+        }
+
     }
 }
