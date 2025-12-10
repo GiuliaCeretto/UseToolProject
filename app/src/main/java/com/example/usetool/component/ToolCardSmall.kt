@@ -1,17 +1,22 @@
-import androidx.compose.foundation.background
+package com.example.usetool.component
+
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.sp
 import com.example.usetool.model.Tool
+import com.example.usetool.R
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToolCardSmall(
     tool: Tool,
@@ -19,43 +24,36 @@ fun ToolCardSmall(
 ) {
     Card(
         modifier = Modifier
-            .width(180.dp)
-            .height(200.dp)
+            .width(200.dp)
+            .padding(8.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // Placeholder immagine (oppure Coil per immagini vere)
-            Box(
+            // Immagine statica da res/drawable
+            Image(
+                painter = painterResource(id = R.drawable.placeholder_tool),
+                contentDescription = tool.name,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .height(120.dp)
-                    .background(Color.LightGray),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("IMG")
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                tool.name,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 12.dp)
+                    .fillMaxWidth(),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                if (tool.available) "Disponibile" else "Non disponibile",
-                color = if (tool.available)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.error,
-                modifier = Modifier.padding(horizontal = 12.dp)
+                text = tool.name,
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 16.sp),
+                textAlign = TextAlign.Center,
+                maxLines = 2
             )
         }
     }

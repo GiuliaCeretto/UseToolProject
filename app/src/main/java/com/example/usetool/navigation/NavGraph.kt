@@ -1,67 +1,83 @@
 package com.example.usetool.navigation
 
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.compose.*
 import com.example.usetool.screens.*
-import com.example.usetool.viewModel.UseToolViewModel
+import com.example.usetool.viewmodel.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NavGraph(viewModel: UseToolViewModel) {
+fun AppNavGraph(
+    useToolViewModel: UseToolViewModel,
+    searchViewModel: SearchViewModel,
+    cartViewModel: CartViewModel,
+    userViewModel: UserViewModel,
+    collegamentoViewModel: CollegamentoViewModel,
+) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = NavRoutes.Home.route) {
 
         composable(NavRoutes.Home.route) {
-            Home(navController, viewModel)
+            HomeScreen(navController, useToolViewModel, cartViewModel)
         }
 
-        composable(
-            NavRoutes.Distributore.route,
-            arguments = listOf(navArgument("id") { type = NavType.StringType })
-        ) {
-            val id = it.arguments?.getString("id") ?: ""
-            Distributore(navController, viewModel, id)
-        }
-
-        composable(
-            NavRoutes.Strumento.route,
-            arguments = listOf(navArgument("id") { type = NavType.StringType })
-        ) {
-            val id = it.arguments?.getString("id") ?: ""
-            Strumento(navController, viewModel, id)
-        }
-
-        composable(NavRoutes.Consulenza.route) {
-            Consulenza(navController, viewModel)
-        }
-
-        composable(NavRoutes.MieiStrumenti.route) {
-            MieiStrumenti(navController, viewModel)
-        }
-
-        composable(
-            NavRoutes.InizioNoleggio.route,
-            arguments = listOf(navArgument("toolId") { type = NavType.StringType })
-        ) {
-            val toolId = it.arguments?.getString("toolId") ?: ""
-            InizioNoleggio(navController, viewModel, toolId)
-        }
-
-        composable(NavRoutes.Ricerca.route) {
-            Ricerca(navController, viewModel)
-        }
-
-        composable(NavRoutes.Profilo.route) {
-            Profilo(navController, viewModel)
+        composable(NavRoutes.Search.route) {
+            SearchScreen(navController, searchViewModel, cartViewModel)
         }
 
         composable(NavRoutes.Collegamento.route) {
-            CollegamentoScreen(navController, viewModel)
+            CollegamentoScreen(navController, collegamentoViewModel)
         }
 
+        composable(NavRoutes.Consulenza.route) {
+            ConsulenzaScreen(navController)
+        }
+
+        composable(NavRoutes.Profilo.route) {
+            ProfiloScreen(navController, userViewModel)
+        }
+
+        composable(NavRoutes.Carrello.route) {
+            CarrelloScreen(navController, cartViewModel)
+        }
+
+        composable(NavRoutes.Pagamento.route) {
+            PagamentoScreen(navController, cartViewModel, collegamentoViewModel)
+        }
+
+        composable(
+            NavRoutes.SchedaDistributore.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStack ->
+            val id = backStack.arguments?.getString("id") ?: ""
+            SchedaDistributoreScreen(navController, id, useToolViewModel, cartViewModel)
+        }
+
+        composable(
+            NavRoutes.SchedaStrumento.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStack ->
+            val id = backStack.arguments?.getString("id") ?: ""
+            SchedaStrumentoScreen(navController, id, useToolViewModel, cartViewModel)
+        }
+
+        composable(
+            NavRoutes.SchedaStrumentoFiltrata.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStack ->
+            val id = backStack.arguments?.getString("id") ?: ""
+            SchedaStrumentoFiltrataScreen(navController, id, useToolViewModel, cartViewModel)
+        }
+
+        composable(
+            NavRoutes.SchedaStrumentoNoleggiata.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStack ->
+            val id = backStack.arguments?.getString("id") ?: ""
+            SchedaStrumentoNoleggiataScreen(navController, id, useToolViewModel, userViewModel)
+        }
     }
 }

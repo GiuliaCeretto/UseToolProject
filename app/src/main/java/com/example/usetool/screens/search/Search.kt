@@ -1,4 +1,4 @@
-package com.example.usetool.screens
+package com.example.usetool.screens.search
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -7,13 +7,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.components.BottomNavBar
-import com.example.usetool.viewModel.UseToolViewModel
+import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MieiStrumenti(navController: NavController, viewModel: UseToolViewModel) {
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("I miei strumenti") }) },
+fun Ricerca(navController: NavController, viewModel: UseToolViewModel) {
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("Ricerca Strumenti") }) },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         Column(
@@ -21,10 +21,7 @@ fun MieiStrumenti(navController: NavController, viewModel: UseToolViewModel) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Lista strumenti noleggiati:")
-            viewModel.tools.filter { !it.available }.forEach {
-                Text("• ${it.name}")
-            }
+            Text("Funzionalità di ricerca strumenti (in sviluppo).")
         }
     }
 }
