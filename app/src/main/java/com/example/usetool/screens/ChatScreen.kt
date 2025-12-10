@@ -1,4 +1,4 @@
-package com.example.usetool.screens.search
+package com.example.usetool.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -11,17 +11,18 @@ import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Ricerca(navController: NavController, viewModel: UseToolViewModel) {
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("Ricerca Strumenti") }) },
+fun Consulenza(navController: NavController, viewModel: UseToolViewModel) {
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Consulenza") }) },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Funzionalità di ricerca strumenti (in sviluppo).")
+            Text("Rubrica esperti e consigli personalizzati.")
         }
     }
 }

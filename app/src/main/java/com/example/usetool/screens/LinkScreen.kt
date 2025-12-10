@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.usetool.screens.linking
+package com.example.usetool.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

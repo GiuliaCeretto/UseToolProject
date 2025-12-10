@@ -20,6 +20,7 @@ fun AppNavGraph(
 
     NavHost(navController = navController, startDestination = NavRoutes.Home.route) {
 
+        // Schermate statiche
         composable(NavRoutes.Home.route) {
             HomeScreen(navController, useToolViewModel, cartViewModel)
         }
@@ -29,31 +30,32 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Collegamento.route) {
-            CollegamentoScreen(navController, collegamentoViewModel)
+            LinkScreen(navController, collegamentoViewModel)
         }
 
         composable(NavRoutes.Consulenza.route) {
-            ConsulenzaScreen(navController)
+            ChatScreen(navController)
         }
 
         composable(NavRoutes.Profilo.route) {
-            ProfiloScreen(navController, userViewModel)
+            ProfileScreen(navController, userViewModel)
         }
 
         composable(NavRoutes.Carrello.route) {
-            CarrelloScreen(navController, cartViewModel)
+            CartScreen(navController, cartViewModel)
         }
 
         composable(NavRoutes.Pagamento.route) {
-            PagamentoScreen(navController, cartViewModel, collegamentoViewModel)
+            PaymentScreen(navController, cartViewModel, collegamentoViewModel)
         }
 
+        // Schermate dinamiche con ID
         composable(
             NavRoutes.SchedaDistributore.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaDistributoreScreen(navController, id, useToolViewModel, cartViewModel)
+            DistributorScreen(navController, id, useToolViewModel, cartViewModel)
         }
 
         composable(
@@ -61,23 +63,25 @@ fun AppNavGraph(
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaStrumentoScreen(navController, id, useToolViewModel, cartViewModel)
+            ToolScreen(navController, id, useToolViewModel, cartViewModel)
         }
 
+        // Se prevedi strumenti filtrati
         composable(
             NavRoutes.SchedaStrumentoFiltrata.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaStrumentoFiltrataScreen(navController, id, useToolViewModel, cartViewModel)
+            ToolScreen(navController, id, useToolViewModel, cartViewModel) // riusa ToolScreen se vuoi
         }
 
+        // Strumenti noleggiati
         composable(
             NavRoutes.SchedaStrumentoNoleggiata.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaStrumentoNoleggiataScreen(navController, id, useToolViewModel, userViewModel)
+            ToolScreen(navController, id, useToolViewModel, userViewModel) // o uno screen dedicato se vuoi
         }
     }
 }

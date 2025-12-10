@@ -10,11 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.model.Tool
 import com.example.usetool.navigation.NavRoutes
-import com.example.usetool.component.AppTopBar
-import com.example.usetool.component.BottomNavBar
-import com.example.usetool.component.ToolCardSmall
+import com.example.usetool.components.AppTopBar
+import com.example.usetool.components.BottomNavBar
+import com.example.usetool.components.ToolCardSmall
 import com.example.usetool.viewmodel.CartViewModel
 import com.example.usetool.viewmodel.UseToolViewModel
 import kotlinx.coroutines.launch
@@ -43,7 +42,7 @@ fun HomeScreen(navController: NavController, vm: UseToolViewModel, cartVM: CartV
                     ToolCardSmall(
                         tool = tool,
                         onClick = {
-                            navController.navigate(NavRoutes.ToolDetailFiltered.buildRoute(tool.id))
+                            navController.navigate(NavRoutes.SchedaStrumentoFiltrata.buildRoute(tool.id))
                         },
                         onAdd = {
                             cartVM.add(tool, null)

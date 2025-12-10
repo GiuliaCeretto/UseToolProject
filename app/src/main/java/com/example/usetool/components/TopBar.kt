@@ -1,4 +1,4 @@
-package com.example.usetool.component
+package com.example.usetool.components
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable

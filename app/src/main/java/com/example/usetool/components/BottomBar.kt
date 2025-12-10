@@ -1,4 +1,4 @@
-package com.example.usetool.component
+package com.example.usetool.components
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -17,10 +17,11 @@ fun BottomNavBar(navController: NavController) {
     val items = listOf(
         BottomNavItem("Home", NavRoutes.Home.route, Icons.Default.Home),
         BottomNavItem("Cerca", NavRoutes.Search.route, Icons.Default.Search),
-        BottomNavItem("Collega", NavRoutes.Collegamento.route, Icons.Default.Link),
-        BottomNavItem("Consulenza", NavRoutes.Consulenza.route, Icons.Default.Chat),
+        BottomNavItem("Collega", NavRoutes.Collegamento.route, Icons.Default.Build),
+        BottomNavItem("Consulenza", NavRoutes.Consulenza.route, Icons.Default.AccountBox),
         BottomNavItem("Profilo", NavRoutes.Profilo.route, Icons.Default.AccountCircle)
     )
+
 
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()

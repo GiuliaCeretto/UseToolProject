@@ -3,9 +3,6 @@ package com.example.usetool.viewmodel
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import com.example.usetool.model.User
-
-data class Expert(val id:String, val name:String, val category:String, val price:Double)
 
 class ConsultViewModel : ViewModel() {
     private val _experts = MutableStateFlow<List<Expert>>(listOf(
