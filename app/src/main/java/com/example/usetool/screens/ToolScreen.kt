@@ -12,8 +12,9 @@ import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Strumento(navController: NavController, viewModel: UseToolViewModel, id: String) {
-    val tool = viewModel.tools.find { it.id == id }
+fun ToolScreen(navController: NavController, viewModel: UseToolViewModel, id: String) {
+
+    val tool = viewModel.findToolById(id)
 
     Scaffold(
         topBar = { TopAppBar(title = { Text(tool?.name ?: "Strumento") }) },
@@ -34,3 +35,4 @@ fun Strumento(navController: NavController, viewModel: UseToolViewModel, id: Str
         }
     }
 }
+

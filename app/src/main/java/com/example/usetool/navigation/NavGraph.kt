@@ -26,30 +26,31 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Search.route) {
-            SearchScreen(navController, searchViewModel, cartViewModel)
+            //SearchScreen(navController, searchViewModel, cartViewModel)
+            SearchScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Collegamento.route) {
-            LinkScreen(navController, collegamentoViewModel)
+            LinkScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Consulenza.route) {
-            ChatScreen(navController)
+            ChatScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Profilo.route) {
-            ProfileScreen(navController, userViewModel)
+            ProfileScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Carrello.route) {
-            CartScreen(navController, cartViewModel)
+            CartScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Pagamento.route) {
-            PaymentScreen(navController, cartViewModel, collegamentoViewModel)
+            PaymentScreen(navController, useToolViewModel)
         }
 
-        // Schermate dinamiche con ID
+        /* Schermate dinamiche con ID
         composable(
             NavRoutes.SchedaDistributore.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
@@ -83,5 +84,7 @@ fun AppNavGraph(
             val id = backStack.arguments?.getString("id") ?: ""
             ToolScreen(navController, id, useToolViewModel, userViewModel) // o uno screen dedicato se vuoi
         }
+        */
+
     }
 }

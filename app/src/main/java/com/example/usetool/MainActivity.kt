@@ -11,11 +11,10 @@ import com.example.usetool.viewmodel.*
 
 class MainActivity : ComponentActivity() {
 
-    // ViewModels principali (puoi aggiungerne altri come necessario)
     private val useToolVM: UseToolViewModel by viewModels()
     private val searchVM: SearchViewModel by viewModels()
-    private val cartVM: CarrelloViewModel by viewModels()
-    private val userVM: ProfiloViewModel by viewModels()
+    private val cartVM: CartViewModel by viewModels()
+    private val userVM: UserViewModel by viewModels()
     private val collegamentoVM: CollegamentoViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -24,15 +23,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             UseToolTheme {
                 AppNavGraph(
-                    UseToolViewModel = useToolVM,
-                    SearchViewModel = searchVM,
-                    CartViewModel = cartVM,
-                    UserViewModel = userVM,
-                    CollegamentoViewModel = collegamentoVM
+                    useToolViewModel = useToolVM,
+                    searchViewModel = searchVM,
+                    cartViewModel = cartVM,
+                    userViewModel = userVM,
+                    collegamentoViewModel = collegamentoVM
                 )
             }
         }
     }
 }
-
-

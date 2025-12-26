@@ -11,18 +11,22 @@ import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Consulenza(navController: NavController, viewModel: UseToolViewModel) {
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Consulenza") }) },
+fun SpecialistScreen(navController: NavController, viewModel: UseToolViewModel) {
+    Scaffold(topBar = {
+        TopAppBar(title = { Text("Profilo Utente") }) },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Rubrica esperti e consigli personalizzati.")
+            Text("Nome utente: Demo User")
+            Text("Saldo: €50")
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = { navController.navigate("home") }) {
+                Text("Torna alla Home")
+            }
         }
     }
 }

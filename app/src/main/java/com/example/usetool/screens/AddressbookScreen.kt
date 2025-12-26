@@ -9,25 +9,20 @@ import androidx.navigation.NavController
 import com.example.usetool.components.BottomNavBar
 import com.example.usetool.viewmodel.UseToolViewModel
 
-/*
-Logica: si mette uno switch che seleziona la modalità di selezione.
-Le due pagine diventono due componenti a sua volta:
-- pagina "searchMap"
-- pagina "searchList"
-*/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(navController: NavController, viewModel: UseToolViewModel) {
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("Ricerca Strumenti") }) },
+fun ChatScreen(navController: NavController, viewModel: UseToolViewModel) {
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("Consulenza") }) },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            Text("Funzionalità di ricerca strumenti (in sviluppo).")
+            Text("Rubrica esperti e consigli personalizzati.")
         }
     }
 }

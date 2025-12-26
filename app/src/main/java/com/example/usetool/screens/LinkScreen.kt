@@ -12,7 +12,7 @@ import com.example.usetool.components.BottomNavBar
 import com.example.usetool.viewmodel.UseToolViewModel
 
 @Composable
-fun CollegamentoScreen(
+fun LinkScreen(
     navController: NavController,
     viewModel: UseToolViewModel
 ) {

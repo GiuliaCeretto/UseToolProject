@@ -11,7 +11,7 @@ import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Profilo(navController: NavController, viewModel: UseToolViewModel) {
+fun ProfileScreen(navController: NavController, viewModel: UseToolViewModel) {
     Scaffold(topBar = {
         TopAppBar(title = { Text("Profilo Utente") }) },
         bottomBar = { BottomNavBar(navController) }

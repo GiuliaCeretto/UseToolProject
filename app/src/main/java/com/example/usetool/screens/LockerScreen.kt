@@ -12,7 +12,7 @@ import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Distributore(navController: NavController, viewModel: UseToolViewModel, id: String) {
+fun LockerScreen(navController: NavController, viewModel: UseToolViewModel, id: String) {
     Scaffold(
         topBar = { TopAppBar(title = { Text("Distributore #$id") }) },
         bottomBar = { BottomNavBar(navController) }

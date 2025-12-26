@@ -37,6 +37,7 @@ fun HomeScreen(navController: NavController, vm: UseToolViewModel, cartVM: CartV
             Spacer(modifier = Modifier.height(8.dp))
 
             // Carosello strumenti
+            /*
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(topTools) { tool ->
                     ToolCardSmall(
@@ -53,6 +54,8 @@ fun HomeScreen(navController: NavController, vm: UseToolViewModel, cartVM: CartV
                     )
                 }
             }
+            */
+
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -64,9 +67,11 @@ fun HomeScreen(navController: NavController, vm: UseToolViewModel, cartVM: CartV
                         Text("Noleggio in corso", style = MaterialTheme.typography.titleMedium)
                         Text(rented.name)
                         Spacer(modifier = Modifier.height(8.dp))
+                        /*
                         Button(onClick = {
                             navController.navigate(NavRoutes.RentedToolDetail.buildRoute(rented.id))
                         }) { Text("Vai alla scheda noleggiata") }
+                         */
                     }
                 }
             }
@@ -81,7 +86,7 @@ fun HomeScreen(navController: NavController, vm: UseToolViewModel, cartVM: CartV
                     .fillMaxWidth()
                     .height(180.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { navController.navigate(NavRoutes.DistributorDetail.buildRoute("d1")) }
+                    //.clickable { navController.navigate(NavRoutes.DistributorDetail.buildRoute("d1")) }
             ) {
                 Text("Mappa placeholder (clicca per esempio)", modifier = Modifier.padding(12.dp))
             }
