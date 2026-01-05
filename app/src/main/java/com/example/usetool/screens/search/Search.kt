@@ -6,22 +6,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.components.BottomNavBar
+import com.example.usetool.component.BottomNavBar
+import com.example.usetool.component.AppTopBar
 import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Ricerca(navController: NavController, viewModel: UseToolViewModel) {
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("Ricerca Strumenti") }) },
+fun SearchScreen(
+    navController: NavController,
+    viewModel: UseToolViewModel
+) {
+    Scaffold(
+        topBar = { AppTopBar(navController, "UseTool") },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            Text("Funzionalità di ricerca strumenti (in sviluppo).")
+        Column(Modifier.padding(padding).padding(16.dp)) {
+            Text("Ricerca strumenti (in sviluppo)")
         }
     }
 }

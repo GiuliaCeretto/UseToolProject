@@ -14,39 +14,34 @@ data class BottomNavItem(val title: String, val route: String, val icon: android
 
 @Composable
 fun BottomNavBar(navController: NavController) {
+
     val items = listOf(
         BottomNavItem("Home", NavRoutes.Home.route, Icons.Default.Home),
         BottomNavItem("Cerca", NavRoutes.Search.route, Icons.Default.Search),
-        BottomNavItem("Collega", NavRoutes.Collegamento.route, Icons.Default.Link),
-        BottomNavItem("Consulenza", NavRoutes.Consulenza.route, Icons.Default.Chat),
+        BottomNavItem("Collega", NavRoutes.Collegamento.route, Icons.Default.Add),
+        BottomNavItem("Consulenza", NavRoutes.Consulenza.route, Icons.Default.Phone),
         BottomNavItem("Profilo", NavRoutes.Profilo.route, Icons.Default.AccountCircle)
     )
 
-    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
+    NavigationBar {
         items.forEach { item ->
             val selected = currentRoute == item.route
+
             NavigationBarItem(
                 selected = selected,
                 onClick = {
-                    if (!selected) {
-                        navController.navigate(item.route) {
-                            launchSingleTop = true
-                            restoreState = true
-                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                    navController.navigate(item.route) {
+                        popUpTo(NavRoutes.Home.route) {
+                            inclusive = false
                         }
+                        launchSingleTop = true
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.title) },
-                label = { Text(item.title) },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray
-                )
+                label = { Text(item.title) }
             )
         }
     }

@@ -4,7 +4,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
+import androidx.navigation.navArgument
 import com.example.usetool.screens.*
+import com.example.usetool.screens.search.*
+import com.example.usetool.screens.profile.*
+import com.example.usetool.screens.linking.*
+import com.example.usetool.screens.consulting.*
+import com.example.usetool.screens.tool.*
+import com.example.usetool.screens.distributor.*
+import com.example.usetool.screens.cart.*
+import com.example.usetool.screens.payment.PagamentoScreen
 import com.example.usetool.viewmodel.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -14,30 +23,34 @@ fun AppNavGraph(
     searchViewModel: SearchViewModel,
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
-    collegamentoViewModel: CollegamentoViewModel,
+    linkingViewModel: LinkingViewModel
 ) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = NavRoutes.Home.route) {
+    NavHost(
+        navController = navController,
+        startDestination = NavRoutes.Home.route
+    ) {
 
+        // --- BOTTOM BAR ---
         composable(NavRoutes.Home.route) {
             HomeScreen(navController, useToolViewModel, cartViewModel)
         }
 
         composable(NavRoutes.Search.route) {
-            SearchScreen(navController, searchViewModel, cartViewModel)
+            SearchScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Collegamento.route) {
-            CollegamentoScreen(navController, collegamentoViewModel)
+            CollegamentoScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Consulenza.route) {
-            ConsulenzaScreen(navController)
+            Consulenza(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Profilo.route) {
-            ProfiloScreen(navController, userViewModel)
+            ProfiloScreen(navController, useToolViewModel)
         }
 
         composable(NavRoutes.Carrello.route) {
@@ -45,39 +58,35 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Pagamento.route) {
-            PagamentoScreen(navController, cartViewModel, collegamentoViewModel)
+            PagamentoScreen(navController, cartViewModel)
         }
 
+        // --- DETTAGLI ---
         composable(
-            NavRoutes.SchedaDistributore.route,
+            route = NavRoutes.SchedaStrumento.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaDistributoreScreen(navController, id, useToolViewModel, cartViewModel)
+            SchedaStrumentoScreen(
+                navController = navController,
+                id = id,
+                viewModel = useToolViewModel,
+                cartVM = cartViewModel
+            )
         }
 
         composable(
-            NavRoutes.SchedaStrumento.route,
+            route = NavRoutes.SchedaDistributore.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaStrumentoScreen(navController, id, useToolViewModel, cartViewModel)
-        }
-
-        composable(
-            NavRoutes.SchedaStrumentoFiltrata.route,
-            arguments = listOf(navArgument("id") { type = NavType.StringType })
-        ) { backStack ->
-            val id = backStack.arguments?.getString("id") ?: ""
-            SchedaStrumentoFiltrataScreen(navController, id, useToolViewModel, cartViewModel)
-        }
-
-        composable(
-            NavRoutes.SchedaStrumentoNoleggiata.route,
-            arguments = listOf(navArgument("id") { type = NavType.StringType })
-        ) { backStack ->
-            val id = backStack.arguments?.getString("id") ?: ""
-            SchedaStrumentoNoleggiataScreen(navController, id, useToolViewModel, userViewModel)
+            SchedaDistributoreScreen(
+                navController = navController,
+                id = id,
+                viewModel = useToolViewModel,
+                cartVM = cartViewModel
+            )
         }
     }
 }
+

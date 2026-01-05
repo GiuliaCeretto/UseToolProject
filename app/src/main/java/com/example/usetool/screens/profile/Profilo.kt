@@ -6,27 +6,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.components.BottomNavBar
+import com.example.usetool.component.BottomNavBar
+import com.example.usetool.component.AppTopBar
 import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun Profilo(navController: NavController, viewModel: UseToolViewModel) {
-    Scaffold(topBar = {
-        TopAppBar(title = { Text("Profilo Utente") }) },
+fun ProfiloScreen(
+    navController: NavController,
+    viewModel: UseToolViewModel
+) {
+    Scaffold(
+        topBar = { AppTopBar(navController, "UseTool") },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-        ) {
+        Column(Modifier.padding(padding).padding(16.dp)) {
             Text("Nome utente: Demo User")
             Text("Saldo: €50")
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = { navController.navigate("home") }) {
-                Text("Torna alla Home")
-            }
         }
     }
 }
+

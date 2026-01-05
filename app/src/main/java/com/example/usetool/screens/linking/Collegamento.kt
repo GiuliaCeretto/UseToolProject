@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.components.BottomNavBar
+import com.example.usetool.component.BottomNavBar
 import com.example.usetool.viewmodel.UseToolViewModel
 
 @Composable
@@ -22,9 +22,7 @@ fun CollegamentoScreen(
                 title = { Text("Collegamento Locker") }
             )
         },
-        bottomBar = {
-            BottomNavBar(navController)
-        }
+        bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         Column(
             modifier = Modifier

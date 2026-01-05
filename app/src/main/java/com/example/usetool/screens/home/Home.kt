@@ -21,71 +21,80 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController, vm: UseToolViewModel, cartVM: CartViewModel) {
+fun HomeScreen(
+    navController: NavController,
+    vm: UseToolViewModel,
+    cartVM: CartViewModel
+) {
     val topTools by vm.topTools.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = { AppTopBar(navController, "UseTool") },
-        bottomBar = { BottomNavBar(navController) },
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        bottomBar = { BottomNavBar(navController) }
     ) { padding ->
 
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+        Column(Modifier.padding(padding).padding(16.dp)) {
 
             Text("Top strumenti", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(8.dp))
 
-            // Carosello strumenti
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 items(topTools) { tool ->
                     ToolCardSmall(
                         tool = tool,
                         onClick = {
-                            navController.navigate(NavRoutes.ToolDetailFiltered.buildRoute(tool.id))
-                        },
-                        onAdd = {
-                            cartVM.add(tool, null)
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("${tool.name} aggiunto al carrello")
-                            }
+                            navController.navigate(
+                                NavRoutes.SchedaStrumento.createRoute(tool.id)
+                            )
                         }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
 
-            // Riepilogo noleggio in corso - placeholder
-            val rented = topTools.firstOrNull { !it.available } // esempio mock
+            Spacer(Modifier.height(20.dp))
+
+            val rented = topTools.firstOrNull { !it.available }
+
             if (rented != null) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Noleggio in corso", style = MaterialTheme.typography.titleMedium)
                         Text(rented.name)
+
                         Spacer(modifier = Modifier.height(8.dp))
+
                         Button(onClick = {
-                            navController.navigate(NavRoutes.RentedToolDetail.buildRoute(rented.id))
-                        }) { Text("Vai alla scheda noleggiata") }
+                            navController.navigate(
+                                NavRoutes.SchedaStrumento.createRoute(rented.id)
+                            )
+                        }) {
+                            Text("Vai alla scheda strumento")
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
 
-            // Mappa placeholder
-            Text("Distributori vicini", style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.height(8.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { navController.navigate(NavRoutes.DistributorDetail.buildRoute("d1")) }
+                    .clickable {
+                        navController.navigate(
+                            NavRoutes.SchedaDistributore.createRoute("d1")
+                        )
+                    }
             ) {
-                Text("Mappa placeholder (clicca per esempio)", modifier = Modifier.padding(12.dp))
+                Text(
+                    "Mappa placeholder (clicca)",
+                    modifier = Modifier.padding(12.dp)
+                )
             }
+
         }
     }
 }

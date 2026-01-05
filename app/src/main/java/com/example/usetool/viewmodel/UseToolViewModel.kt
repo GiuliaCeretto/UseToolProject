@@ -4,15 +4,15 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import com.example.usetool.model.Tool
-import com.example.usetool.model.Distributor
+import com.example.usetool.model.Locker
 
 class UseToolViewModel : ViewModel() {
 
     private val _topTools = MutableStateFlow<List<Tool>>(emptyList())
     val topTools: StateFlow<List<Tool>> = _topTools
 
-    private val _distributors = MutableStateFlow<List<Distributor>>(emptyList())
-    val distributors: StateFlow<List<Distributor>> = _distributors
+    private val _lockers = MutableStateFlow<List<Locker>>(emptyList())
+    val lockers: StateFlow<List<Locker>> = _lockers
 
     init {
         loadMocks()
@@ -29,13 +29,13 @@ class UseToolViewModel : ViewModel() {
         )
         _topTools.value = t.take(5)
 
-        _distributors.value = listOf(
-            Distributor("d1","Ferramenta Centrale","Via A, 1", 45.0703, 7.6869, listOf("1","2","3")),
-            Distributor("d2","Bricolage Store","Via B, 2", 45.0710, 7.6900, listOf("2","4")),
-            Distributor("d3","Mini Store","Via C, 3",45.0680,7.6920, listOf("1","5"))
+        _lockers.value = listOf(
+            Locker("d1","Ferramenta Centrale","Via A, 1", 45.0703, 7.6869, listOf("1","2","3")),
+            Locker("d2","Bricolage Store","Via B, 2", 45.0710, 7.6900, listOf("2","4")),
+            Locker("d3","Mini Store","Via C, 3",45.0680,7.6920, listOf("1","5"))
         )
     }
 
     fun findToolById(id: String): Tool? = (_topTools.value + _topTools.value).find { it.id == id } // naive
-    fun findDistributorById(id: String): Distributor? = _distributors.value.find { it.id == id }
+    fun findLockerById(id: String): Locker? = _lockers.value.find { it.id == id }
 }
