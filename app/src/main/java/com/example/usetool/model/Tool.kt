@@ -3,8 +3,19 @@ package com.example.usetool.model
 data class Tool(
     val id: String,
     val name: String,
-    val description: String = "",
-    val imageUrl: String? = null,
+    val shortDescription: String = "",
+    val fullDescription: String = "",
+    val imageRes: Int,                 // drawable
     val available: Boolean = true,
-    val pricePerHour: Double = 0.0
+
+    // Prezzi
+    val pricePerHour: Double? = null,  // se noleggiabile
+    val purchasePrice: Double? = null, // se acquistabile
+
+    // Dati tecnici dinamici
+    val technicalData: Map<String, String> = emptyMap(),
+
+    // Link esterni
+    val pdfUrl: String? = null,
+    val videoUrl: String? = null
 )
