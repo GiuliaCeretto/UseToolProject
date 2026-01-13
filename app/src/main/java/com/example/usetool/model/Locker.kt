@@ -6,5 +6,6 @@ data class Locker(
     val address: String,
     val latitude: Double,
     val longitude: Double,
-    val toolsAvailable: List<String> = emptyList()
+    val toolsAvailable: List<String> = emptyList(),
+    val distanceKm: Double = 1.2 // mock
 )
