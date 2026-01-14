@@ -3,7 +3,7 @@ package com.example.usetool.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.usetool.data.network.FirebaseDao
-import com.example.usetool.data.network.FirebaseService
+import com.example.usetool.data.services.FirebaseService
 import com.example.usetool.data.repository.UseToolRepository
 import com.example.usetool.data.dto.ExpertDTO
 import kotlinx.coroutines.flow.SharingStarted

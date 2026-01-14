@@ -1,189 +1,71 @@
 package com.example.usetool.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import androidx.lifecycle.viewModelScope
+import com.example.usetool.data.network.FirebaseDao
+import com.example.usetool.data.services.FirebaseService
+import com.example.usetool.data.repository.UseToolRepository
 import com.example.usetool.model.Tool
 import com.example.usetool.model.Locker
-import com.example.usetool.R
+import com.example.usetool.data.dto.ToolDTO
+import com.example.usetool.data.dto.LockerDTO
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
-class UseToolViewModel : ViewModel() {
+class UseToolViewModel(context: Context) : ViewModel() {
 
-    private val _topTools = MutableStateFlow<List<Tool>>(emptyList())
-    val topTools: StateFlow<List<Tool>> = _topTools
+    // 1. Inizializziamo i componenti della catena (DAO -> Service -> Repo)
+    private val dao = FirebaseDao()
+    private val service = FirebaseService(dao)
+    private val repository = UseToolRepository(service)
 
-    private val _lockers = MutableStateFlow<List<Locker>>(emptyList())
-    val lockers: StateFlow<List<Locker>> = _lockers
+    // 2. Trasformiamo i DTO di Firebase nei modelli Tool della UI (Mapping)
+    val topTools: StateFlow<List<Tool>> = repository.tools.map { dtoList ->
+        dtoList.map { dto ->
+            // Trasformiamo ogni ToolDTO in un Tool per la UI
+            mapDtoToTool(dto, context)
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    init {
-        loadMocks()
-    }
+    // 3. Facciamo lo stesso per i Lockers
+    val lockers: StateFlow<List<Locker>> = repository.lockers.map { dtoList ->
+        dtoList.map { dto -> mapDtoToLocker(dto) }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private fun loadMocks() {
-        val tools = listOf(
+    // Funzioni di utilità per trovare dati
+    fun findToolById(id: String): Tool? = topTools.value.find { it.id == id }
+    fun findLockerById(id: String): Locker? = lockers.value.find { it.id == id }
 
-            Tool(
-                id = "1",
-                name = "Trapano a percussione",
-                shortDescription = "Trapano 18V potente e versatile",
-                fullDescription = "Trapano a percussione ideale per forare muro, legno e metallo. Dotato di batteria a lunga durata, velocità regolabile e impugnatura ergonomica.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                pricePerHour = 1.50,
-                technicalData = mapOf(
-                    "Voltaggio" to "18V",
-                    "Autonomia" to "3h",
-                    "Peso" to "2.4 kg"
-                ),
-                pdfUrl = "https://example.com/trapano.pdf",
-                videoUrl = "https://youtube.com/watch?v=trapano"
-            ),
+    // --- LOGICA DI MAPPING ---
+    private fun mapDtoToTool(dto: ToolDTO, context: Context): Tool {
+        // Recuperiamo l'ID numerico dell'immagine partendo dal nome stringa nel DB
+        val resId = context.resources.getIdentifier(dto.imageResName, "drawable", context.packageName)
 
-            Tool(
-                id = "2",
-                name = "Pinza a pappagallo",
-                shortDescription = "Pinza regolabile per serraggi vari",
-                fullDescription = "Pinza a pappagallo regolabile, utile per serraggi e fissaggi su tubi e profilati.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                pricePerHour = 0.80, // affittabile
-                technicalData = mapOf(
-                    "Apertura" to "25 mm",
-                    "Lunghezza" to "200 mm",
-                    "Peso" to "0.5 kg"
-                ),
-                pdfUrl = "https://example.com/pinza.pdf",
-                videoUrl = "https://youtube.com/watch?v=pinza"
-            ),
-
-            Tool(
-                id = "3",
-                name = "Kit tasselli",
-                shortDescription = "Kit completo di tasselli per fissaggi",
-                fullDescription = "Kit di tasselli di varie misure, ideale per fissaggi su muro e legno. Acquistabile in confezione completa.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                purchasePrice = 9.90,
-                technicalData = mapOf(
-                    "Quantità" to "50 pezzi",
-                    "Misura" to "6 mm",
-                    "Tipologia" to "Acciaio"
-                ),
-                pdfUrl = "https://example.com/tasselli.pdf",
-                videoUrl = "https://youtube.com/watch?v=tasselli"
-            ),
-
-            Tool(
-                id = "4",
-                name = "Martello",
-                shortDescription = "Martello universale in acciaio",
-                fullDescription = "Martello in acciaio temperato con manico antiscivolo. Perfetto per lavori di carpenteria e bricolage.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                purchasePrice = 14.90,
-                technicalData = mapOf(
-                    "Peso" to "0.9 kg",
-                    "Lunghezza" to "30 cm"
-                ),
-                pdfUrl = "https://example.com/martello.pdf",
-                videoUrl = "https://youtube.com/watch?v=martello"
-            ),
-
-            Tool(
-                id = "5",
-                name = "Sega circolare",
-                shortDescription = "Sega per tagli precisi",
-                fullDescription = "Sega circolare ad alte prestazioni per tagli precisi su legno e pannelli. Dotata di protezione lama e guida laterale.",
-                imageRes = R.drawable.placeholder_tool,
-                available = false,
-                pricePerHour = 2.00,
-                technicalData = mapOf(
-                    "Voltaggio" to "230V",
-                    "Peso" to "3.8 kg"
-                ),
-                pdfUrl = "https://example.com/sega.pdf",
-                videoUrl = "https://youtube.com/watch?v=sega"
-            ),
-
-            // NUOVI STRUMENTI
-            Tool(
-                id = "6",
-                name = "Chiodi",
-                shortDescription = "Confezione di chiodi in acciaio",
-                fullDescription = "Chiodi robusti in acciaio, disponibili in varie lunghezze. Perfetti per lavori di falegnameria e bricolage.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                purchasePrice = 4.50,
-                technicalData = mapOf(
-                    "Quantità" to "100 pezzi",
-                    "Misura" to "5 cm",
-                    "Materiale" to "Acciaio"
-                ),
-                pdfUrl = "https://example.com/chiodi.pdf",
-                videoUrl = "https://youtube.com/watch?v=chiodi"
-            ),
-
-            Tool(
-                id = "7",
-                name = "Set di cacciaviti",
-                shortDescription = "Kit di cacciaviti multipli",
-                fullDescription = "Set di cacciaviti di varie misure, ideale per lavori di precisione. Affittabile per uso temporaneo.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                pricePerHour = 1.00,
-                technicalData = mapOf(
-                    "Pezzi" to "10",
-                    "Tipologia" to "Philips / Piatto",
-                    "Manico" to "Antiscivolo"
-                ),
-                pdfUrl = "https://example.com/cacciaviti.pdf",
-                videoUrl = "https://youtube.com/watch?v=cacciaviti"
-            ),
-
-            Tool(
-                id = "8",
-                name = "Carta vetrata",
-                shortDescription = "Foglio carta vetrata grana media",
-                fullDescription = "Carta vetrata resistente per levigatura legno, metallo e plastica. Acquistabile in confezione singola.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                purchasePrice = 2.50,
-                technicalData = mapOf(
-                    "Grana" to "120",
-                    "Dimensione" to "230x280 mm"
-                ),
-                pdfUrl = "https://example.com/cartavetrata.pdf",
-                videoUrl = "https://youtube.com/watch?v=cartavetrata"
-            ),
-
-            Tool(
-                id = "9",
-                name = "Fascette",
-                shortDescription = "Fascette in plastica per fissaggi",
-                fullDescription = "Fascette resistenti in plastica, ideali per cablaggi e fissaggi vari. Acquistabili in confezione.",
-                imageRes = R.drawable.placeholder_tool,
-                available = true,
-                purchasePrice = 3.00,
-                technicalData = mapOf(
-                    "Lunghezza" to "200 mm",
-                    "Colore" to "Nero",
-                    "Quantità" to "50 pezzi"
-                ),
-                pdfUrl = "https://example.com/fascette.pdf",
-                videoUrl = "https://youtube.com/watch?v=fascette"
-            )
-        )
-
-        _topTools.value = tools.take(9)
-
-        _lockers.value = listOf(
-            Locker("d1","Ferramenta Centrale","Via A, 1", 45.0703, 7.6869, listOf("1","2","3","6","7")),
-            Locker("d2","Bricolage Store","Via B, 2", 45.0710, 7.6900, listOf("2","4","8")),
-            Locker("d3","Mini Store","Via C, 3",45.0680,7.6920, listOf("1","5","9"))
+        return Tool(
+            id = dto.id,
+            name = dto.name,
+            shortDescription = dto.description.take(50) + "...",
+            fullDescription = dto.description,
+            imageRes = if (resId != 0) resId else com.example.usetool.R.drawable.placeholder_tool,
+            available = dto.type == "noleggio", // Esempio di logica
+            pricePerHour = if (dto.type == "noleggio") dto.price else null,
+            purchasePrice = if (dto.type == "acquisto") dto.price else null,
+            videoUrl = dto.videoUrl,
+            pdfUrl = dto.pdfUrls.firstOrNull()
         )
     }
 
-
-    fun findToolById(id: String): Tool? = (_topTools.value + _topTools.value).find { it.id == id } // naive
-    fun findLockerById(id: String): Locker? = _lockers.value.find { it.id == id }
+    private fun mapDtoToLocker(dto: LockerDTO): Locker {
+        return Locker(
+            id = dto.id,
+            name = dto.name,
+            address = dto.address,
+            lat = dto.lat,
+            lon = dto.lon,
+            toolIds = dto.toolIds
+        )
+    }
 }
