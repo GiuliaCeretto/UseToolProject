@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "331441655704",
+    "project_id": "usetool-57cec",
+    "storage_bucket": "usetool-57cec.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:331441655704:android:17f1dc9ef60ae08ea9e5ed",
+        "android_client_info": {
+          "package_name": "com.example.usetool"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTVm8s9aJifBF_A1QIkDIWie_NxbHtq1c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

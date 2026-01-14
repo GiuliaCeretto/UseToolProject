@@ -1,0 +1,18 @@
+{
+  "e1": {
+    "id": "e1",
+    "firstName": "Mario",
+    "lastName": "Rossi",
+    "profession": "Idraulico Specializzato",
+    "phoneNumber": "+39 333 1234567",
+    "bio": "Esperto in riparazioni domestiche e impianti termoidraulici con oltre 10 anni di esperienza."
+  },
+  "e2": {
+    "id": "e2",
+    "firstName": "Luca",
+    "lastName": "Bianchi",
+    "profession": "Elettricista",
+    "phoneNumber": "+39 347 7654321",
+    "bio": "Specializzato in domotica e impianti elettrici industriali. Disponibile per pronto intervento."
+  }
+}

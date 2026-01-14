@@ -7,7 +7,11 @@ import androidx.activity.viewModels
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.example.usetool.navigation.AppNavGraph
 import com.example.usetool.ui.theme.UseToolTheme
-import com.example.usetool.viewmodel.*
+import com.example.usetool.ui.viewmodel.CartViewModel
+import com.example.usetool.ui.viewmodel.LinkingViewModel
+import com.example.usetool.ui.viewmodel.SearchViewModel
+import com.example.usetool.ui.viewmodel.UseToolViewModel
+import com.example.usetool.ui.viewmodel.UserViewModel
 
 class MainActivity : ComponentActivity() {
 
