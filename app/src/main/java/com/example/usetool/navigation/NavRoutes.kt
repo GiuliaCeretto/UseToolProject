@@ -25,4 +25,8 @@ sealed class NavRoutes(val route: String) {
 
     object Carrello : NavRoutes("carrello")
     object Pagamento : NavRoutes("pagamento")
+
+    object SchedaConsulente : NavRoutes("consulente/{id}") {
+        fun createRoute(id: String) = "consulente/$id"
+    }
 }

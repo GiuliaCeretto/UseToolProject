@@ -2,6 +2,7 @@ package com.example.usetool.navigation
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
@@ -15,7 +16,6 @@ import com.example.usetool.screens.distributor.*
 import com.example.usetool.screens.cart.*
 import com.example.usetool.screens.payment.PagamentoScreen
 import com.example.usetool.viewmodel.*
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavGraph(
@@ -46,8 +46,21 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Consulenza.route) {
-            Consulenza(navController, useToolViewModel)
+            val consultViewModel: ConsultViewModel = viewModel()
+            Consulenza(navController, consultViewModel)
         }
+
+        composable(
+            route = NavRoutes.SchedaConsulente.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStack ->
+            val id = backStack.arguments?.getString("id") ?: ""
+            SchedaConsulenteScreen(
+                navController = navController,
+                expertId = id
+            )
+        }
+
 
         composable(NavRoutes.Profilo.route) {
             ProfiloScreen(navController, useToolViewModel)
@@ -87,6 +100,7 @@ fun AppNavGraph(
                 cartVM = cartViewModel
             )
         }
+
     }
 }
 
