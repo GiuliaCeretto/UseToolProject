@@ -177,13 +177,20 @@ class UseToolViewModel : ViewModel() {
         _topTools.value = tools.take(9)
 
         _lockers.value = listOf(
-            Locker("d1","Ferramenta Centrale","Via A, 1", 45.0703, 7.6869, listOf("1","2","3","6","7")),
-            Locker("d2","Bricolage Store","Via B, 2", 45.0710, 7.6900, listOf("2","4","8")),
-            Locker("d3","Mini Store","Via C, 3",45.0680,7.6920, listOf("1","5","9"))
+            Locker("d1","Ferramenta Centrale","Via A, 1", 45.0703, 7.6869, listOf("1","2","3","6","7"), 10.0),
+            Locker("d2","Bricolage Store","Via B, 2", 45.0710, 7.6900, listOf("2","4","8"), 5.5),
+            Locker("d3","Mini Store","Via C, 3",45.0680,7.6920, listOf("1","5","9"), 1.0)
         )
     }
 
 
     fun findToolById(id: String): Tool? = (_topTools.value + _topTools.value).find { it.id == id } // naive
+
     fun findLockerById(id: String): Locker? = _lockers.value.find { it.id == id }
+
+    fun getDistanceForTool(toolId: String): Double? {
+        return _lockers.value
+            .filter { it.toolsAvailable.contains(toolId) }
+            .minOfOrNull { it.distanceKm }
+    }
 }

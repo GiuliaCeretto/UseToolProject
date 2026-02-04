@@ -14,6 +14,7 @@ import com.example.usetool.screens.consulting.*
 import com.example.usetool.screens.tool.*
 import com.example.usetool.screens.distributor.*
 import com.example.usetool.screens.cart.*
+import com.example.usetool.screens.consult.SchedaConsulenteScreen
 import com.example.usetool.screens.payment.PagamentoScreen
 import com.example.usetool.viewmodel.*
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,13 +55,14 @@ fun AppNavGraph(
             route = NavRoutes.SchedaConsulente.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
-            val id = backStack.arguments?.getString("id") ?: ""
+            // Prendi l'id dall'argomento della route
+            val id = backStack.arguments?.getString("id") ?: return@composable
+
             SchedaConsulenteScreen(
                 navController = navController,
                 expertId = id
             )
         }
-
 
         composable(NavRoutes.Profilo.route) {
             ProfiloScreen(navController, useToolViewModel)

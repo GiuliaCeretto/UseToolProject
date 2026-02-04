@@ -3,7 +3,6 @@ package com.example.usetool.screens.search
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -20,16 +19,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.component.*
+import com.example.usetool.component.AppTopBar
+import com.example.usetool.component.BottomNavBar
+import com.example.usetool.component.ToolCardMini
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.viewmodel.UseToolViewModel
 import kotlin.math.roundToInt
-import androidx.compose.ui.graphics.Color
 
 @Composable
 fun SearchScreen(
@@ -44,6 +45,20 @@ fun SearchScreen(
     var maxDistance by remember { mutableStateOf(5f) }
     val selectedTypes = remember { mutableStateMapOf<String, Boolean>() }
 
+    // 🔎 FILTRO TOOL PER TESTO + DISTANZA
+    val filteredTools = tools.filter { tool ->
+        val matchesQuery =
+            tool.name.contains(query, ignoreCase = true)
+
+        val distance =
+            viewModel.getDistanceForTool(tool.id)
+
+        val matchesDistance =
+            distance != null && distance <= maxDistance
+
+        matchesQuery && matchesDistance
+    }
+
     Scaffold(
         topBar = { AppTopBar(navController, "Cerca") },
         bottomBar = { BottomNavBar(navController) }
@@ -56,7 +71,7 @@ fun SearchScreen(
                 .padding(16.dp)
         ) {
 
-            // SEARCH BAR
+            // 🔍 SEARCH BAR
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -64,36 +79,33 @@ fun SearchScreen(
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null)
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true
             )
 
             Spacer(Modifier.height(20.dp))
 
-            /* 🔁 SWITCHER */
+            // 🔁 SWITCHER LISTA / MAPPA
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 HomeSwitcher(
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
+                    onTabSelected = { selectedTab = it }
                 )
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // LISTA
+            // 📋 LISTA
             if (selectedTab == 0) {
 
                 Text(
-                    "Distanza da te: ${maxDistance.roundToInt()} km",
+                    "Distanza massima: ${maxDistance.roundToInt()} km",
                     style = MaterialTheme.typography.titleMedium
                 )
-
 
                 Slider(
                     value = maxDistance,
@@ -107,17 +119,18 @@ fun SearchScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier
-                        .height(510.dp)
+                        .height(520.dp)
                         .fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(
-                        tools.filter { it.name?.contains(query, ignoreCase = true) == true }
-                    ) { tool ->
+                    items(filteredTools) { tool ->
+                        val distance =
+                            viewModel.getDistanceForTool(tool.id)?.toFloat()
+
                         ToolCardMini(
                             tool = tool,
-                            distanceKm = 5f,
+                            distanceKm = distance,
                             onClick = {
                                 navController.navigate(
                                     NavRoutes.SchedaStrumento.createRoute(tool.id)
@@ -128,8 +141,9 @@ fun SearchScreen(
                 }
             }
 
-            // MAPPA
+            // 🗺️ MAPPA
             else {
+
                 Text(
                     "Filtra per tipo",
                     style = MaterialTheme.typography.titleMedium
@@ -137,8 +151,21 @@ fun SearchScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                val allTools = tools.distinctBy { it.name }.take(9)
-                val columns = allTools.chunked(3) // ogni colonna ha max 3 chip
+                val allTools = tools.distinctBy { it.name }
+                val columns = allTools.chunked(3)
+                val filteredLockers by remember(selectedTypes, lockers) {
+                    derivedStateOf {
+                        val selectedToolIds = selectedTypes.filter { it.value }.keys
+                        if (selectedToolIds.isEmpty()) lockers
+                        else {
+                            lockers.filter { locker ->
+                                selectedToolIds.all { it in locker.toolsAvailable }
+                            }
+                        }
+                    }
+                }
+
+
 
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -152,7 +179,8 @@ fun SearchScreen(
                                 FilterChip(
                                     selected = selectedTypes[tool.id] == true,
                                     onClick = {
-                                        selectedTypes[tool.id] = !(selectedTypes[tool.id] ?: false)
+                                        selectedTypes[tool.id] =
+                                            !(selectedTypes[tool.id] ?: false)
                                     },
                                     label = { Text(tool.name) }
                                 )
@@ -168,19 +196,16 @@ fun SearchScreen(
                         .fillMaxWidth()
                         .height(260.dp)
                 ) {
-                    // MAPPA
-                    val mapPainter = runCatching { painterResource(R.drawable.placeholder_map) }.getOrNull()
-                    mapPainter?.let {
-                        Image(
-                            painter = it,
-                            contentDescription = "Mappa",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                    // MAPPA MOCK
+                    Image(
+                        painter = painterResource(R.drawable.placeholder_map),
+                        contentDescription = "Mappa",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
 
-                    // PIN CLICCABILI
-                    lockers.forEachIndexed { index, locker ->
+                    // 📍 PIN LOCKER FILTRATI
+                    filteredLockers.forEachIndexed { index, locker ->
                         Column(
                             modifier = Modifier
                                 .offset(
@@ -215,8 +240,6 @@ fun SearchScreen(
                     }
                 }
             }
-
-
         }
     }
 }
