@@ -32,178 +32,170 @@ fun ProfiloScreen(
     navController: NavController,
     viewModel: UseToolViewModel
 ) {
-    Scaffold(
-        topBar = { AppTopBar(navController, "UseTool") },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
 
-        LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        // TITOLO
+        item {
+            Text(
+                text = "Profilo",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
-            // TITOLO
-            item {
-                Text(
-                    text = "Profilo",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+        item { Spacer(Modifier.height(16.dp)) }
 
-            item { Spacer(Modifier.height(16.dp)) }
+        // FOTO PROFILO
+        item {
+            Image(
+                painter = painterResource(R.drawable.placeholder_profilo),
+                contentDescription = "Foto profilo",
+                modifier = Modifier
+                    .size(110.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        }
 
-            // FOTO PROFILO
-            item {
-                Image(
-                    painter = painterResource(R.drawable.placeholder_profilo),
-                    contentDescription = "Foto profilo",
-                    modifier = Modifier
-                        .size(110.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            }
+        item { Spacer(Modifier.height(16.dp)) }
 
-            item { Spacer(Modifier.height(16.dp)) }
-
-            // CARD INFO UTENTE
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(5.dp)
+        // CARD INFO UTENTE
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(5.dp)
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth()
+                    Text(
+                        text = "Mario Rossi",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "@mariorossi",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "mario.rossi@email.com",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(Modifier.height(10.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Mario Rossi",
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Text(
-                            text = "@mariorossi",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Text(
-                            text = "mario.rossi@email.com",
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(Modifier.height(10.dp))
-
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("12 noleggi", style = MaterialTheme.typography.labelMedium)
-                            Spacer(Modifier.width(8.dp))
-                            Text("|")
-                            Spacer(Modifier.width(8.dp))
-                            Text("2 in corso", style = MaterialTheme.typography.labelMedium)
-                        }
+                        Text("12 noleggi", style = MaterialTheme.typography.labelMedium)
+                        Spacer(Modifier.width(8.dp))
+                        Text("|")
+                        Spacer(Modifier.width(8.dp))
+                        Text("2 in corso", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
+        }
 
-            item { Spacer(Modifier.height(16.dp)) }
+        item { Spacer(Modifier.height(16.dp)) }
 
-            // AZIONI PROFILO
-            item {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    ProfileActionButton(
-                        icon = Icons.Default.Settings,
-                        label = "Impostazioni"
-                    )
-                    ProfileActionButton(
-                        icon = Icons.Default.Star,
-                        label = "Lingua"
-                    )
-                    ProfileActionButton(
-                        icon = Icons.Default.Close,
-                        label = "Logout"
-                    )
-                }
-            }
-
-            item { Spacer(Modifier.height(24.dp)) }
-
-            // NOLEGGI IN CORSO
-            item {
-                Text(
-                    text = "Noleggi in corso",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
+        // AZIONI PROFILO
+        item {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ProfileActionButton(
+                    icon = Icons.Default.Settings,
+                    label = "Impostazioni"
+                )
+                ProfileActionButton(
+                    icon = Icons.Default.Star,
+                    label = "Lingua"
+                )
+                ProfileActionButton(
+                    icon = Icons.Default.Close,
+                    label = "Logout"
                 )
             }
+        }
 
-            item {
-                Card(
+        item { Spacer(Modifier.height(24.dp)) }
+
+        // NOLEGGI IN CORSO
+        item {
+            Text(
+                text = "Noleggi in corso",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start
+            )
+        }
+
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
-                    shape = RoundedCornerShape(16.dp)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
+                        RentalActionButton("Rinnova")
+                        RentalActionButton("Gestione")
+                    }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            RentalActionButton("Rinnova")
-                            RentalActionButton("Gestione")
-                        }
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            RentalActionButton("Pagamento")
-                            RentalActionButton("Fattura")
-                        }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        RentalActionButton("Pagamento")
+                        RentalActionButton("Fattura")
                     }
                 }
             }
+        }
 
+        item { Spacer(Modifier.height(24.dp)) }
 
-            item { Spacer(Modifier.height(24.dp)) }
+        // STORICO NOLEGGI
+        item {
+            Text(
+                text = "Storico noleggi",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Start
+            )
+        }
 
-            // STORICO NOLEGGI
-            item {
-                Text(
-                    text = "Storico noleggi",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
-                )
-            }
-
-            items(3) {
-                PastRentalCard()
-            }
+        items(3) {
+            PastRentalCard()
         }
     }
 }
+
 
 @Composable
 private fun PastRentalCard() {

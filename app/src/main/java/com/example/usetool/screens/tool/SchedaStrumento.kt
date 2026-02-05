@@ -33,150 +33,139 @@ fun SchedaStrumentoScreen(
 ) {
     val tool = viewModel.findToolById(id) ?: return
 
-    Scaffold(
-        topBar = { AppTopBar(navController, tool.name) },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
 
-        Column(
+        // IMMAGINE
+        Box(
             modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            contentAlignment = Alignment.Center
         ) {
-
-            // IMMAGINE
-            Box(
+            Image(
+                painter = painterResource(tool.imageRes),
+                contentDescription = tool.name,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth(0.7f)
+                    .aspectRatio(1f)
+            )
+        }
+
+        Column(modifier = Modifier.padding(16.dp)) {
+
+            // NOME STRUMENTO
+            Text(
+                tool.name,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            // DESCRIZIONE BREVE
+            Text(
+                text = tool.shortDescription,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // DATI TECNICI
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Image(
-                    painter = painterResource(tool.imageRes),
-                    contentDescription = tool.name,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .aspectRatio(1f)
-                )
+                tool.technicalData.forEach { (label, value) ->
+                    TechBox(label, value)
+                }
             }
 
+            Spacer(Modifier.height(16.dp))
 
-            Column(modifier = Modifier.padding(16.dp)) {
-
-                // NOME STRUMENTO
-                Text(
-                    tool.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(6.dp))
-
-                // DESCRIZIONE BREVE
-                Text(
-                    text = tool.shortDescription,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                // DATI TECNICI
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    tool.technicalData.forEach { (label, value) ->
-                        TechBox(label, value)
+            // PDF / VIDEO
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        tool.pdfUrl?.let {
+                            // Apri PDF
+                        } ?: println("PDF non disponibile")
                     }
-                }
+                ) { Text("Scheda tecnica") }
 
-                Spacer(Modifier.height(16.dp))
+                OutlinedButton(
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        tool.videoUrl?.let {
+                            // Apri video
+                        } ?: println("Video non disponibile")
+                    }
+                ) { Text("Video tutorial") }
+            }
 
-                // PDF / VIDEO
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            if (tool.pdfUrl != null) {
-                                // Apri il PDF
-                            } else {
-                                // Mostra un messaggio o apri un PDF di default
-                                println("PDF non disponibile")
-                            }
-                        }
-                    ) { Text("Scheda tecnica") }
+            Spacer(Modifier.height(20.dp))
 
-                    OutlinedButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = {
-                            if (tool.videoUrl != null) {
-                                // Apri il video
-                            } else {
-                                // Mostra un messaggio o apri un video di default
-                                println("Video non disponibile")
-                            }
-                        }
-                    ) { Text("Video tutorial") }
-                }
+            // DESCRIZIONE COMPLETA
+            Text(
+                text = tool.fullDescription,
+                style = MaterialTheme.typography.bodyMedium
+            )
 
+            Spacer(Modifier.height(24.dp))
 
-                Spacer(Modifier.height(20.dp))
-
-                // DESCRIZIONE COMPLETA (SEMPRE VISIBILE)
-                Text(
-                    text = tool.fullDescription,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-
-                Spacer(Modifier.height(24.dp))
-
-                // PREZZO
-                val priceText = tool.pricePerHour?.let { "€$it/ora" }
-                    ?: "Prezzo acquisto: €${tool.purchasePrice}"
-
-                Text(
-                    buildAnnotatedString {
-                        if (tool.pricePerHour != null) {
-                            append("€")
-                            withStyle(style = SpanStyle(
+            // PREZZO
+            Text(
+                buildAnnotatedString {
+                    if (tool.pricePerHour != null) {
+                        append("€")
+                        withStyle(
+                            SpanStyle(
                                 fontSize = MaterialTheme.typography.titleLarge.fontSize,
                                 fontWeight = FontWeight.ExtraBold
                             )
-                            ) {
-                                append("${tool.pricePerHour}")
-                            }
-                            append("/ora")
-                        } else {
-                            append("Prezzo acquisto: €")
-                            withStyle(style = SpanStyle(fontSize = MaterialTheme.typography.titleLarge.fontSize, fontWeight = FontWeight.ExtraBold)) {
-                                append("${tool.purchasePrice}")
-                            }
+                        ) {
+                            append("${tool.pricePerHour}")
                         }
-                    },
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                // DISPONIBILITÀ
-                if (tool.available) {
-                    Button(
-                        onClick = { cartVM.add(tool, null) },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Aggiungi al carrello")
+                        append("/ora")
+                    } else {
+                        append("Prezzo acquisto: €")
+                        withStyle(
+                            SpanStyle(
+                                fontSize = MaterialTheme.typography.titleLarge.fontSize,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        ) {
+                            append("${tool.purchasePrice}")
+                        }
                     }
-                } else {
-                    Text(
-                        text = "Strumento non disponibile",
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Bold
-                    )
+                },
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // DISPONIBILITÀ
+            if (tool.available) {
+                Button(
+                    onClick = { cartVM.add(tool, null) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Aggiungi al carrello")
                 }
+            } else {
+                Text(
+                    text = "Strumento non disponibile",
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

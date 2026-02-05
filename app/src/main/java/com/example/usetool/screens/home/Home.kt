@@ -40,31 +40,56 @@ fun HomeScreen(
 
     var selectedTab by remember { mutableStateOf(0) }
 
-    Scaffold(
-        topBar = { AppTopBar(navController, "UseTool") },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+        // SALUTO
+        Text(
+            text = "Ciao, Mario 👋",
+            style = MaterialTheme.typography.titleLarge
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        // I TUOI NOLEGGI
+        Text("I tuoi noleggi", style = MaterialTheme.typography.titleMedium)
+
+        LazyRow {
+            items(tools.filter { !it.available }) { tool ->
+                ToolCardSmall(
+                    tool = tool,
+                    onClick = {
+                        navController.navigate(
+                            NavRoutes.SchedaStrumento.createRoute(tool.id)
+                        )
+                    }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // SWITCHER
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-
-            // SALUTO
-            Text(
-                text = "Ciao, Mario 👋",
-                style = MaterialTheme.typography.titleLarge
+            HomeSwitcher(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
             )
+        }
 
-            Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
-            // I TUOI NOLEGGI
-            Text("I tuoi noleggi", style = MaterialTheme.typography.titleMedium)
-
+        // CONTENUTO SWITCHER
+        if (selectedTab == 0) {
             LazyRow {
-                items(tools.filter { !it.available }) { tool ->
+                items(tools.take(5)) { tool ->
                     ToolCardSmall(
                         tool = tool,
                         onClick = {
@@ -75,103 +100,70 @@ fun HomeScreen(
                     )
                 }
             }
-
-            Spacer(Modifier.height(24.dp))
-
-            // SWITCHER
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                HomeSwitcher(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // CONTENUTO SWITCHER
-            if (selectedTab == 0) {
-                // POPOLARI
-                LazyRow {
-                    items(tools.take(5)) { tool ->
-                        ToolCardSmall(
-                            tool = tool,
-                            onClick = {
-                                navController.navigate(
-                                    NavRoutes.SchedaStrumento.createRoute(tool.id)
-                                )
-                            }
-                        )
-                    }
-                }
-            } else {
-                // VICINI A TE
-                LazyRow {
-                    items(lockers.sortedBy { it.distanceKm }.take(5)) { locker ->
-                        LockerCardSmall(
-                            locker = locker,
-                            onClick = {
-                                navController.navigate(
-                                    NavRoutes.SchedaDistributore.createRoute(locker.id)
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(24.dp))
-
-            // MAPPA
-            Text("Trova sulla mappa", style = MaterialTheme.typography.titleMedium)
-
-            Spacer(Modifier.height(8.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.placeholder_map),
-                    contentDescription = "Mappa",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-
-                lockers.forEachIndexed { index, locker ->
-                    Column(
-                        modifier = Modifier
-                            .offset(
-                                x = (40 + index * 90).dp,
-                                y = (60 + index * 30).dp
-                            )
-                            .clickable {
-                                navController.navigate(
-                                    NavRoutes.SchedaDistributore.createRoute(locker.id)
-                                )
-                            },
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = locker.name,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(30.dp)
-                        )
-
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                        ) {
-                            Text(
-                                locker.name,
-                                style = MaterialTheme.typography.labelSmall,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        } else {
+            LazyRow {
+                items(lockers.sortedBy { it.distanceKm }.take(5)) { locker ->
+                    LockerCardSmall(
+                        locker = locker,
+                        onClick = {
+                            navController.navigate(
+                                NavRoutes.SchedaDistributore.createRoute(locker.id)
                             )
                         }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // MAPPA
+        Text("Trova sulla mappa", style = MaterialTheme.typography.titleMedium)
+
+        Spacer(Modifier.height(8.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(220.dp)
+        ) {
+            Image(
+                painter = painterResource(R.drawable.placeholder_map),
+                contentDescription = "Mappa",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            lockers.forEachIndexed { index, locker ->
+                Column(
+                    modifier = Modifier
+                        .offset(
+                            x = (40 + index * 90).dp,
+                            y = (60 + index * 30).dp
+                        )
+                        .clickable {
+                            navController.navigate(
+                                NavRoutes.SchedaDistributore.createRoute(locker.id)
+                            )
+                        },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = locker.name,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(30.dp)
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                    ) {
+                        Text(
+                            locker.name,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
                     }
                 }
             }

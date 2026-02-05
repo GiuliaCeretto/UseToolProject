@@ -45,197 +45,183 @@ fun SearchScreen(
     var maxDistance by remember { mutableStateOf(5f) }
     val selectedTypes = remember { mutableStateMapOf<String, Boolean>() }
 
-    // 🔎 FILTRO TOOL PER TESTO + DISTANZA
+    // 🔎 FILTRO TOOL
     val filteredTools = tools.filter { tool ->
-        val matchesQuery =
-            tool.name.contains(query, ignoreCase = true)
-
-        val distance =
-            viewModel.getDistanceForTool(tool.id)
-
-        val matchesDistance =
-            distance != null && distance <= maxDistance
-
+        val matchesQuery = tool.name.contains(query, ignoreCase = true)
+        val distance = viewModel.getDistanceForTool(tool.id)
+        val matchesDistance = distance != null && distance <= maxDistance
         matchesQuery && matchesDistance
     }
 
-    Scaffold(
-        topBar = { AppTopBar(navController, "Cerca") },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+        // 🔍 SEARCH BAR
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            placeholder = { Text("Cerca") },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = null)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        // 🔁 SWITCHER LISTA / MAPPA
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
+            HomeSwitcher(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
+        }
 
-            // 🔍 SEARCH BAR
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                placeholder = { Text("Cerca") },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true
+        Spacer(Modifier.height(20.dp))
+
+        // 📋 LISTA
+        if (selectedTab == 0) {
+
+            Text(
+                "Distanza massima: ${maxDistance.roundToInt()} km",
+                style = MaterialTheme.typography.titleMedium
             )
 
-            Spacer(Modifier.height(20.dp))
+            Slider(
+                value = maxDistance,
+                onValueChange = { maxDistance = it },
+                valueRange = 1f..20f,
+                steps = 18
+            )
 
-            // 🔁 SWITCHER LISTA / MAPPA
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+            Spacer(Modifier.height(16.dp))
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .height(520.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                HomeSwitcher(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
-                )
+                items(filteredTools) { tool ->
+                    val distance =
+                        viewModel.getDistanceForTool(tool.id)?.toFloat()
+
+                    ToolCardMini(
+                        tool = tool,
+                        distanceKm = distance,
+                        onClick = {
+                            navController.navigate(
+                                NavRoutes.SchedaStrumento.createRoute(tool.id)
+                            )
+                        }
+                    )
+                }
+            }
+        }
+
+        // 🗺️ MAPPA
+        else {
+
+            Text(
+                "Filtra per tipo",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            val allTools = tools.distinctBy { it.name }
+            val columns = allTools.chunked(3)
+
+            val filteredLockers by remember(selectedTypes, lockers) {
+                derivedStateOf {
+                    val selectedToolIds =
+                        selectedTypes.filter { it.value }.keys
+
+                    if (selectedToolIds.isEmpty()) lockers
+                    else lockers.filter { locker ->
+                        selectedToolIds.all { it in locker.toolsAvailable }
+                    }
+                }
+            }
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                items(columns) { columnTools ->
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        columnTools.forEach { tool ->
+                            FilterChip(
+                                selected = selectedTypes[tool.id] == true,
+                                onClick = {
+                                    selectedTypes[tool.id] =
+                                        !(selectedTypes[tool.id] ?: false)
+                                },
+                                label = { Text(tool.name) }
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // 📋 LISTA
-            if (selectedTab == 0) {
-
-                Text(
-                    "Distanza massima: ${maxDistance.roundToInt()} km",
-                    style = MaterialTheme.typography.titleMedium
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(260.dp)
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.placeholder_map),
+                    contentDescription = "Mappa",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
 
-                Slider(
-                    value = maxDistance,
-                    onValueChange = { maxDistance = it },
-                    valueRange = 1f..20f,
-                    steps = 18
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier
-                        .height(520.dp)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filteredTools) { tool ->
-                        val distance =
-                            viewModel.getDistanceForTool(tool.id)?.toFloat()
-
-                        ToolCardMini(
-                            tool = tool,
-                            distanceKm = distance,
-                            onClick = {
-                                navController.navigate(
-                                    NavRoutes.SchedaStrumento.createRoute(tool.id)
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-
-            // 🗺️ MAPPA
-            else {
-
-                Text(
-                    "Filtra per tipo",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                val allTools = tools.distinctBy { it.name }
-                val columns = allTools.chunked(3)
-                val filteredLockers by remember(selectedTypes, lockers) {
-                    derivedStateOf {
-                        val selectedToolIds = selectedTypes.filter { it.value }.keys
-                        if (selectedToolIds.isEmpty()) lockers
-                        else {
-                            lockers.filter { locker ->
-                                selectedToolIds.all { it in locker.toolsAvailable }
-                            }
-                        }
-                    }
-                }
-
-
-
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    contentPadding = PaddingValues(horizontal = 4.dp)
-                ) {
-                    items(columns) { columnTools ->
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            columnTools.forEach { tool ->
-                                FilterChip(
-                                    selected = selectedTypes[tool.id] == true,
-                                    onClick = {
-                                        selectedTypes[tool.id] =
-                                            !(selectedTypes[tool.id] ?: false)
-                                    },
-                                    label = { Text(tool.name) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(260.dp)
-                ) {
-                    // MAPPA MOCK
-                    Image(
-                        painter = painterResource(R.drawable.placeholder_map),
-                        contentDescription = "Mappa",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    // 📍 PIN LOCKER FILTRATI
-                    filteredLockers.forEachIndexed { index, locker ->
-                        Column(
-                            modifier = Modifier
-                                .offset(
-                                    x = (40 + index * 80).dp,
-                                    y = (60 + index * 30).dp
-                                )
-                                .clickable {
-                                    navController.navigate(
-                                        NavRoutes.SchedaDistributore.createRoute(locker.id)
-                                    )
-                                },
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = locker.name,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(30.dp)
+                filteredLockers.forEachIndexed { index, locker ->
+                    Column(
+                        modifier = Modifier
+                            .offset(
+                                x = (40 + index * 80).dp,
+                                y = (60 + index * 30).dp
                             )
-
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                            ) {
-                                Text(
-                                    locker.name,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            .clickable {
+                                navController.navigate(
+                                    NavRoutes.SchedaDistributore.createRoute(locker.id)
                                 )
-                            }
+                            },
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = locker.name,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(30.dp)
+                        )
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                        ) {
+                            Text(
+                                locker.name,
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(
+                                    horizontal = 8.dp,
+                                    vertical = 4.dp
+                                )
+                            )
                         }
                     }
                 }

@@ -2,7 +2,9 @@ package com.example.usetool.navigation
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
@@ -20,17 +22,18 @@ import com.example.usetool.viewmodel.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppNavGraph(
+    navController: NavHostController,
     useToolViewModel: UseToolViewModel,
     searchViewModel: SearchViewModel,
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
-    linkingViewModel: LinkingViewModel
-) {
-    val navController = rememberNavController()
-
+    linkingViewModel: LinkingViewModel,
+    modifier: Modifier = Modifier
+){
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Home.route
+        startDestination = NavRoutes.Home.route,
+        modifier = modifier
     ) {
 
         // --- BOTTOM BAR ---
@@ -43,7 +46,12 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Collegamento.route) {
-            CollegamentoScreen(navController, useToolViewModel)
+            CollegamentoScreen(
+                navController = navController,
+                useToolViewModel = useToolViewModel,
+                cartViewModel = cartViewModel,
+                linkingViewModel = linkingViewModel
+            )
         }
 
         composable(NavRoutes.Consulenza.route) {
@@ -102,7 +110,6 @@ fun AppNavGraph(
                 cartVM = cartViewModel
             )
         }
-
     }
 }
 

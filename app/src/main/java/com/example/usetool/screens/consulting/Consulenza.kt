@@ -46,68 +46,61 @@ fun Consulenza(
     // Lista delle professioni disponibili
     val professions = experts.map { it.profession }.distinct()
 
-    Scaffold(
-        topBar = { AppTopBar(navController, "Consulenza") },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    // Root senza Scaffold
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxSize()
+        // --- BARRA DI RICERCA ---
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = { searchQuery = it },
+            label = { Text("Cerca esperto") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // --- CAROSELLO PROFESSIONI ---
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-
-            // --- BARRA DI RICERCA ---
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Cerca esperto") },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- CAROSELLO PROFESSIONI ---
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Pulsante "Tutte"
-                item {
-                    FilterChip(
-                        selected = selectedProfession == null,
-                        onClick = { selectedProfession = null },
-                        label = { Text("Tutte") }
-                    )
-                }
-
-                items(professions) { profession ->
-                    FilterChip(
-                        selected = selectedProfession == profession,
-                        onClick = { selectedProfession = profession },
-                        label = { Text(profession) }
-                    )
-                }
+            // Pulsante "Tutte"
+            item {
+                FilterChip(
+                    selected = selectedProfession == null,
+                    onClick = { selectedProfession = null },
+                    label = { Text("Tutte") }
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            items(professions) { profession ->
+                FilterChip(
+                    selected = selectedProfession == profession,
+                    onClick = { selectedProfession = profession },
+                    label = { Text(profession) }
+                )
+            }
+        }
 
-            // --- GRID DI CARD ---
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filteredExperts) { expert ->
-                    ConsultantCard(
-                        expert = expert,
-                        navController = navController
-                    )
-                }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // --- GRID DI CARD ---
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(filteredExperts) { expert ->
+                ConsultantCard(
+                    expert = expert,
+                    navController = navController
+                )
             }
         }
     }

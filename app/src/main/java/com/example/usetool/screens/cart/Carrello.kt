@@ -21,63 +21,58 @@ fun CarrelloScreen(
 ) {
     val items by cartViewModel.items.collectAsState()
 
-    Scaffold(
-        topBar = { AppTopBar(navController, "UseTool") },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
+        if (items.isEmpty()) {
+            Text("Il carrello è vuoto")
+            return@Column
+        }
+
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.weight(1f)
         ) {
+            items(items) { item ->
+                Card {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(item.tool.name, style = MaterialTheme.typography.titleMedium)
+                        Text("Durata: ${item.durationHours} ore")
+                        Text("Prezzo: €${item.subtotal}")
 
-            if (items.isEmpty()) {
-                Text("Il carrello è vuoto")
-                return@Column
-            }
+                        Spacer(modifier = Modifier.height(8.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                items(items) { item ->
-                    Card {
-                        Column(modifier = Modifier.padding(12.dp)) {
-                            Text(item.tool.name, style = MaterialTheme.typography.titleMedium)
-                            Text("Durata: ${item.durationHours} ore")
-                            Text("Prezzo: €${item.subtotal}")
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Button(
-                                onClick = { cartViewModel.remove(item.id) },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text("Rimuovi")
-                            }
+                        Button(
+                            onClick = { cartViewModel.remove(item.id) },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Rimuovi")
                         }
                     }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Totale: €${cartViewModel.total}",
-                style = MaterialTheme.typography.titleLarge
-            )
+        Text(
+            text = "Totale: €${cartViewModel.total}",
+            style = MaterialTheme.typography.titleLarge
+        )
 
-            Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-            Button(
-                onClick = { navController.navigate(NavRoutes.Pagamento.route) },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Procedi al pagamento")
-            }
+        Button(
+            onClick = { navController.navigate(NavRoutes.Pagamento.route) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Procedi al pagamento")
         }
     }
 }
+

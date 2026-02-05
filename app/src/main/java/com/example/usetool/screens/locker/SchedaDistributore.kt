@@ -1,31 +1,35 @@
 package com.example.usetool.screens.distributor
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.component.*
+import com.example.usetool.component.AppTopBar
+import com.example.usetool.component.DistributorToolRow
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.viewmodel.CartViewModel
 import com.example.usetool.viewmodel.UseToolViewModel
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Place
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,21 +49,18 @@ fun SchedaDistributoreScreen(
 
     BottomSheetScaffold(
         scaffoldState = sheetState,
-        topBar = { AppTopBar(navController, locker.name) },
         sheetPeekHeight = 140.dp,
         sheetContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetDragHandle = { BottomSheetDefaults.DragHandle() },
         sheetContent = {
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-
-                // HEADER
+                // ================= HEADER =================
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
@@ -75,9 +76,8 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // STRUMENTI A NOLEGGIO
+                // ================= STRUMENTI A NOLEGGIO =================
                 Text("Strumenti a noleggio", style = MaterialTheme.typography.titleMedium)
-
                 tools.filter { it.pricePerHour != null }
                     .sortedBy { !it.available }
                     .forEach { tool ->
@@ -90,9 +90,8 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // MATERIALI DI CONSUMO
+                // ================= MATERIALI DI CONSUMO =================
                 Text("Materiali di consumo", style = MaterialTheme.typography.titleMedium)
-
                 tools.filter { it.purchasePrice != null }
                     .sortedBy { !it.available }
                     .forEach { tool ->
@@ -127,14 +126,12 @@ fun SchedaDistributoreScreen(
             }
         }
     ) { padding ->
-
         // ================= MAPPA =================
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-
             // MAPPA
             Image(
                 painter = painterResource(R.drawable.placeholder_map),
@@ -154,9 +151,7 @@ fun SchedaDistributoreScreen(
                     start = userPosition,
                     end = lockerPosition,
                     strokeWidth = 6f,
-                    pathEffect = PathEffect.dashPathEffect(
-                        floatArrayOf(20f, 12f)
-                    )
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 12f))
                 )
             }
 

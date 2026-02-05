@@ -27,90 +27,81 @@ fun SchedaConsulenteScreen(
 ) {
     val expert: Expert? = consultViewModel.findExpertById(expertId)
 
-    Scaffold(
-        topBar = { AppTopBar(navController, "UseTool") },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    if (expert == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Esperto non trovato")
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Nome e cognome
+            Text(
+                text = expert.name,
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center
+            )
 
-        if (expert == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Esperto non trovato")
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Nome e cognome
-                Text(
-                    text = expert.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    textAlign = TextAlign.Center
-                )
-
-                // Foto dell’esperto
-                expert.imageRes?.let { imageRes ->
-                    Image(
-                        painter = painterResource(id = imageRes),
-                        contentDescription = expert.name,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .padding(vertical = 8.dp)
-                    )
-                }
-
-                // Profession / descrizione
-                Text(
-                    text = expert.profession,
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                // Descrizione
-                Text(
-                    text = expert.description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                // Contatto
-                Text(
-                    text = "Contatto",
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center
-                )
-
-                // Recapito telefonico (placeholder)
-                Text(
-                    text = "+39 123 456 7890",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontSize = 16.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                // Pulsante contatta
-                Button(
-                    onClick = { /* TODO: azione contatta */ },
-                    shape = RoundedCornerShape(12.dp),
+            // Foto dell’esperto
+            expert.imageRes?.let { imageRes ->
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = expert.name,
                     modifier = Modifier
-                        .padding(top = 8.dp)
-                        .fillMaxWidth(0.5f)
-                ) {
-                    Text(text = "Contatta")
-                }
+                        .size(150.dp)
+                        .padding(vertical = 8.dp)
+                )
+            }
+
+            // Profession / descrizione
+            Text(
+                text = expert.profession,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(10.dp))
+
+            // Descrizione
+            Text(
+                text = expert.description,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(20.dp))
+
+            // Contatto
+            Text(
+                text = "Contatto",
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+
+            // Recapito telefonico (placeholder)
+            Text(
+                text = "+39 123 456 7890",
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center
+            )
+
+            // Pulsante contatta
+            Button(
+                onClick = { /* TODO: azione contatta */ },
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth(0.5f)
+            ) {
+                Text(text = "Contatta")
             }
         }
     }

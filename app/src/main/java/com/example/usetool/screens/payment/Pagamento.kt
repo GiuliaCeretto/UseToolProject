@@ -11,41 +11,33 @@ import com.example.usetool.component.BottomNavBar
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.viewmodel.CartViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PagamentoScreen(
     navController: NavController,
-    cartViewModel: CartViewModel
+    cartViewModel: CartViewModel,
 ) {
     val total = cartViewModel.total
 
-    Scaffold(
-        topBar = { AppTopBar(navController, "UseTool") },
-        bottomBar = { BottomNavBar(navController) }
-    ) { padding ->
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+    ) {
 
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
+        Text("Totale da pagare", style = MaterialTheme.typography.titleMedium)
+        Text("€$total", style = MaterialTheme.typography.headlineMedium)
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = {
+                cartViewModel.clear()
+                navController.navigate(NavRoutes.Home.route) {
+                    popUpTo(NavRoutes.Home.route) { inclusive = true }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
         ) {
-
-            Text("Totale da pagare", style = MaterialTheme.typography.titleMedium)
-            Text("€$total", style = MaterialTheme.typography.headlineMedium)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    cartViewModel.clear()
-                    navController.navigate(NavRoutes.Home.route) {
-                        popUpTo(NavRoutes.Home.route) { inclusive = true }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Conferma pagamento")
-            }
+            Text("Conferma pagamento")
         }
     }
 }
