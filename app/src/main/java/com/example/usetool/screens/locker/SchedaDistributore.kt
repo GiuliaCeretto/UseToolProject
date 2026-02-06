@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,14 +46,19 @@ fun SchedaDistributoreScreen(
 
     val selected = remember { mutableStateMapOf<String, Boolean>() }
 
-    val sheetState = rememberBottomSheetScaffoldState()
+    val sheetState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded
+        )
+    )
 
     BottomSheetScaffold(
         scaffoldState = sheetState,
-        sheetPeekHeight = 140.dp,
-        sheetContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+        sheetPeekHeight = 260.dp,
+        sheetContainerColor = MaterialTheme.colorScheme.surface,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetDragHandle = { BottomSheetDefaults.DragHandle() },
+
         sheetContent = {
             Column(
                 modifier = Modifier
@@ -60,24 +66,47 @@ fun SchedaDistributoreScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                // ================= HEADER =================
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
+
+                // HEADER DISTRIBUTORE
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.placeholder_locker),
+                        contentDescription = locker.name,
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text(locker.name, style = MaterialTheme.typography.titleLarge)
+
+                    Spacer(Modifier.width(12.dp))
+
+                    Column {
+                        Text(
+                            locker.name,
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            "ID ${locker.id}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            locker.address,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
 
-                Text(locker.address)
+                Spacer(Modifier.height(8.dp))
+                Divider()
+                Spacer(Modifier.height(12.dp))
 
-                Spacer(Modifier.height(16.dp))
-
-                // ================= STRUMENTI A NOLEGGIO =================
+                // STRUMENTI A NOLEGGIO
                 Text("Strumenti a noleggio", style = MaterialTheme.typography.titleMedium)
+
                 tools.filter { it.pricePerHour != null }
                     .sortedBy { !it.available }
                     .forEach { tool ->
@@ -90,8 +119,9 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // ================= MATERIALI DI CONSUMO =================
+                // MATERIALI DI CONSUMO
                 Text("Materiali di consumo", style = MaterialTheme.typography.titleMedium)
+
                 tools.filter { it.purchasePrice != null }
                     .sortedBy { !it.available }
                     .forEach { tool ->
@@ -107,7 +137,7 @@ fun SchedaDistributoreScreen(
                 val selectedTools = tools.filter { selected[it.id] == true }
 
                 Text("Distanza: ${locker.distanceKm} km")
-                Text("Totale articoli: ${selectedTools.size}")
+                Text("Articoli selezionati: ${selectedTools.size}")
 
                 Spacer(Modifier.height(12.dp))
 
@@ -123,16 +153,18 @@ fun SchedaDistributoreScreen(
                 ) {
                     Text("Aggiungi al carrello (${selectedTools.size})")
                 }
+
+                Spacer(Modifier.height(16.dp))
             }
         }
     ) { padding ->
-        // ================= MAPPA =================
+
+        // MAPPA
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // MAPPA
             Image(
                 painter = painterResource(R.drawable.placeholder_map),
                 contentDescription = "Mappa distributore",
@@ -140,11 +172,9 @@ fun SchedaDistributoreScreen(
                 contentScale = ContentScale.Crop
             )
 
-            // POSIZIONI FAKE (coordinate schermo)
             val userPosition = Offset(250f, 600f)
             val lockerPosition = Offset(550f, 350f)
 
-            // LINEA TRATTEGGIATA
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawLine(
                     color = Color.Blue,
@@ -156,7 +186,7 @@ fun SchedaDistributoreScreen(
             }
 
             val density = LocalDensity.current
-            // MARKER UTENTE
+
             Icon(
                 imageVector = Icons.Default.Place,
                 contentDescription = "Posizione utente",
@@ -169,7 +199,6 @@ fun SchedaDistributoreScreen(
                     )
             )
 
-            // MARKER DISTRIBUTORE
             Icon(
                 imageVector = Icons.Default.LocationOn,
                 contentDescription = "Distributore",
