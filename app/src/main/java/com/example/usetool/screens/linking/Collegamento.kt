@@ -119,15 +119,15 @@ fun CollegamentoScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("Qta:")
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    var qty = item.quantity
                                     TextField(
-                                        value = qty.toString(),
+                                        value = item.quantity.toString(),
                                         onValueChange = { value ->
-                                            val intVal = value.toIntOrNull() ?: 1
-                                            item.quantity = intVal
+                                            value.toIntOrNull()?.let {
+                                                cartViewModel.setQuantity(item.id, it)
+                                            }
                                         },
                                         singleLine = true,
-                                        modifier = Modifier.width(50.dp)
+                                        modifier = Modifier.width(60.dp)
                                     )
                                 }
                             } else if (item.tool.pricePerHour != null) {
@@ -135,15 +135,15 @@ fun CollegamentoScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text("Ore:")
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    var hours = item.durationHours
                                     TextField(
-                                        value = hours.toString(),
+                                        value = item.durationHours.toString(),
                                         onValueChange = { value ->
-                                            val intVal = value.toIntOrNull() ?: 1
-                                            item.durationHours = intVal
+                                            value.toIntOrNull()?.let {
+                                                cartViewModel.setDuration(item.id, it)
+                                            }
                                         },
                                         singleLine = true,
-                                        modifier = Modifier.width(50.dp)
+                                        modifier = Modifier.width(60.dp)
                                     )
                                 }
                             }

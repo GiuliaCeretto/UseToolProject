@@ -194,3 +194,4 @@ class UseToolViewModel : ViewModel() {
             .minOfOrNull { it.distanceKm }
     }
 }
+

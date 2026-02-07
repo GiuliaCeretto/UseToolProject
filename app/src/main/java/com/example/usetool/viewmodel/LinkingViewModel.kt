@@ -17,3 +17,4 @@ class LinkingViewModel : ViewModel() {
         _isLinked.value = false
     }
 }
+

@@ -4,8 +4,8 @@ data class CartItem(
     val id: String,
     val tool: Tool,
     val distributorId: String?,
-    var quantity: Int = 1,
-    var durationHours: Int = 24
+    val quantity: Int = 1,
+    val durationHours: Int = 24
 ) {
     val subtotal: Double
         get() = when {
