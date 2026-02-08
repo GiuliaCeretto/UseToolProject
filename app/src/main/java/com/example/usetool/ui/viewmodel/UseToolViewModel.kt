@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.usetool.data.network.FirebaseDao
-import com.example.usetool.data.services.FirebaseService
+import com.example.usetool.data.network.DataSource
 import com.example.usetool.data.repository.UseToolRepository
 import com.example.usetool.model.Tool
 import com.example.usetool.model.Locker
@@ -19,7 +19,7 @@ class UseToolViewModel(context: Context) : ViewModel() {
 
     // 1. Inizializziamo i componenti della catena (DAO -> Service -> Repo)
     private val dao = FirebaseDao()
-    private val service = FirebaseService(dao)
+    private val service = DataSource(dao)
     private val repository = UseToolRepository(service)
 
     // 2. Trasformiamo i DTO di Firebase nei modelli Tool della UI (Mapping)

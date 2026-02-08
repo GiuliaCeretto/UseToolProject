@@ -10,4 +10,9 @@ class FirebaseDao {
     fun getLockersRef() = db.child("lockers")
     fun getExpertsRef() = db.child("experts")
     fun getSlotsRef() = db.child("slots")
+
+    fun getPurchasesRef(): DatabaseReference = db.child("purchases")
+    fun getRentalsRef(): DatabaseReference = db.child("rentals")
+    fun getCartsRef(): DatabaseReference = db.child("carts")
+    fun getUsersRef(): DatabaseReference = db.child("users")
 }

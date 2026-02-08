@@ -3,14 +3,13 @@ package com.example.usetool.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.usetool.data.dto.ToolDTO
-import com.example.usetool.data.dto.LockerDTO
 import com.example.usetool.data.network.FirebaseDao
-import com.example.usetool.data.services.FirebaseService
+import com.example.usetool.data.network.DataSource
 import com.example.usetool.data.repository.UseToolRepository
 import kotlinx.coroutines.flow.*
 
 class SearchViewModel : ViewModel() {
-    private val repository = UseToolRepository(FirebaseService(FirebaseDao()))
+    private val repository = UseToolRepository(DataSource(FirebaseDao()))
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query
