@@ -1,0 +1,23 @@
+{
+  "d1_slot_01": {
+    "id": "d1_slot_01",
+    "lockerId": "d1",
+    "toolId": "1",
+    "status": "DISPONIBILE",
+    "quantity": 1
+  },
+  "d1_slot_02": {
+    "id": "d1_slot_02",
+    "lockerId": "d1",
+    "toolId": "3",
+    "status": "DISPONIBILE",
+    "quantity": 0
+  },
+  "d1_slot_03": {
+    "id": "d1_slot_03",
+    "lockerId": "d1",
+    "toolId": "6",
+    "status": "DISPONIBILE",
+    "quantity": 1
+  }
+}

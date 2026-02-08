@@ -18,6 +18,11 @@ import com.example.usetool.screens.distributor.*
 import com.example.usetool.screens.cart.*
 import com.example.usetool.screens.consult.SchedaConsulenteScreen
 import com.example.usetool.screens.payment.PagamentoScreen
+import com.example.usetool.ui.viewmodel.CartViewModel
+import com.example.usetool.ui.viewmodel.LinkingViewModel
+import com.example.usetool.ui.viewmodel.SearchViewModel
+import com.example.usetool.ui.viewmodel.UseToolViewModel
+import com.example.usetool.ui.viewmodel.UserViewModel
 import com.example.usetool.viewmodel.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
