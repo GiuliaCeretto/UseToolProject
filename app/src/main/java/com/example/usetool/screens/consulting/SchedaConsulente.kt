@@ -12,8 +12,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.usetool.component.AppTopBar
-import com.example.usetool.component.BottomNavBar
 import com.example.usetool.model.Expert
 import com.example.usetool.viewmodel.ConsultViewModel
 import androidx.compose.ui.text.style.TextAlign

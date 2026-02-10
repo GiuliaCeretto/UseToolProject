@@ -4,10 +4,12 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.usetool.navigation.NavRoutes
+import com.example.usetool.ui.theme.YellowPrimary
 
 data class BottomNavItem(
     val title: String,
@@ -46,7 +48,12 @@ fun BottomNavBar(navController: NavController) {
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.title) },
-                label = { Text(item.title) }
+                label = { Text(item.title) },
+                colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = YellowPrimary,
+                        selectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = Color.Transparent
+                )
             )
         }
     }
