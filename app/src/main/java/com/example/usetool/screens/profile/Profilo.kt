@@ -1,20 +1,21 @@
 package com.example.usetool.screens.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -23,8 +24,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.component.AppTopBar
-import com.example.usetool.component.BottomNavBar
+import com.example.usetool.ui.theme.BluePrimary
+import com.example.usetool.ui.theme.GreyLight
+import com.example.usetool.component.PastRentalCard
 import com.example.usetool.viewmodel.UseToolViewModel
 
 @Composable
@@ -32,9 +34,11 @@ fun ProfiloScreen(
     navController: NavController,
     viewModel: UseToolViewModel
 ) {
+    // Imposto il background dell'intera schermata
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -67,13 +71,15 @@ fun ProfiloScreen(
         // CARD INFO UTENTE
         item {
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(5.dp)
+                border = BorderStroke(1.dp, GreyLight),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface) // bianco
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().padding(16.dp)
                 ) {
                     Text(
                         text = "Mario Rossi",
@@ -112,28 +118,6 @@ fun ProfiloScreen(
 
         item { Spacer(Modifier.height(16.dp)) }
 
-        // AZIONI PROFILO
-        item {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                ProfileActionButton(
-                    icon = Icons.Default.Settings,
-                    label = "Impostazioni"
-                )
-                ProfileActionButton(
-                    icon = Icons.Default.Star,
-                    label = "Lingua"
-                )
-                ProfileActionButton(
-                    icon = Icons.Default.Close,
-                    label = "Logout"
-                )
-            }
-        }
-
-        item { Spacer(Modifier.height(24.dp)) }
-
         // NOLEGGI IN CORSO
         item {
             Text(
@@ -150,7 +134,9 @@ fun ProfiloScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, GreyLight),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier
@@ -196,68 +182,13 @@ fun ProfiloScreen(
     }
 }
 
-
-@Composable
-private fun PastRentalCard() {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-
-            // DISTRIBUTORE
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.weight(0.9f)
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.placeholder_locker),
-                    contentDescription = "Distributore",
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = "Locker Centrale",
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            // INFO NOLEGGIO
-            Column(
-                modifier = Modifier.weight(1.3f)
-            ) {
-                Text("12/01/2024")
-                Text("Durata: 6 ore")
-                Text(
-                    text = "Totale: €18,00",
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            // STRUMENTI
-            Column (
-                modifier = Modifier.weight(1.1f)
-            ) {
-                Text("Trapano")
-                Text("Avvitatore")
-            }
-        }
-    }
-}
-
 @Composable
 fun ProfileActionButton(
     icon: ImageVector,
     label: String,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    buttonColor: Color = MaterialTheme.colorScheme.primary,
+    iconColor: Color = Color.White
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -267,14 +198,14 @@ fun ProfileActionButton(
     ) {
         Surface(
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            tonalElevation = 4.dp,
-            modifier = Modifier.size(56.dp)
+            color = buttonColor,
+            modifier = Modifier.size(56.dp) // <- rimuovo tonalElevation
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = label
+                    contentDescription = label,
+                    tint = iconColor // ← ora bianco funziona
                 )
             }
         }
@@ -283,7 +214,8 @@ fun ProfileActionButton(
 
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall
+            style = MaterialTheme.typography.labelSmall,
+            color = buttonColor // se vuoi il testo colorato come il pulsante
         )
     }
 }
@@ -300,4 +232,3 @@ fun RentalActionButton(
         Text(text)
     }
 }
-

@@ -5,12 +5,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.component.*
 import com.example.usetool.navigation.*
+import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.viewmodel.CartViewModel
 
 @Composable
@@ -25,6 +27,13 @@ fun CarrelloScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
+        // Titolo della schermata
+        Text(
+            text = "Riepilogo carrello",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
         if (items.isEmpty()) {
             Text("Il carrello è vuoto")
@@ -59,10 +68,26 @@ fun CarrelloScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        Text(
-            text = "Totale: €${"%.2f".format(cartViewModel.total)}",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Totale: ",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.alignByBaseline()
+            )
+            Text(
+                text = "€${"%.2f".format(cartViewModel.total)}",
+                style = MaterialTheme.typography.headlineMedium,
+                color = BluePrimary,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .alignByBaseline()
+            )
+        }
     }
 }

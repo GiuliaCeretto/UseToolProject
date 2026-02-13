@@ -1,7 +1,9 @@
-package com.example.usetool.screens.distributor
+package com.example.usetool.screens.locker
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -53,51 +55,76 @@ fun SchedaDistributoreScreen(
 
     BottomSheetScaffold(
         scaffoldState = sheetState,
-        sheetPeekHeight = 260.dp,
+        sheetPeekHeight = 380.dp,
         sheetContainerColor = MaterialTheme.colorScheme.surface,
-        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetDragHandle = { BottomSheetDefaults.DragHandle() },
-
-        sheetContent = {
+        sheetShape = RoundedCornerShape(topStart = 38.dp, topEnd = 24.dp),
+        sheetDragHandle = {
+            // Personalizzo il drag handle
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .background(MaterialTheme.colorScheme.background), // <- colore dello slider
+                contentAlignment = Alignment.Center
+            ) {
+                BottomSheetDefaults.DragHandle(
+                    modifier = Modifier
+                        .width(64.dp)
+                        .height(4.dp)
+                )
+            }
+        }, sheetContent = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
+                    .padding(16.dp),
             ) {
 
                 // HEADER DISTRIBUTORE
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color.LightGray),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
-                    Image(
-                        painter = painterResource(R.drawable.placeholder_locker),
-                        contentDescription = locker.name,
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .size(72.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.placeholder_locker),
+                            contentDescription = locker.name,
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
 
-                    Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(12.dp))
 
-                    Column {
-                        Text(
-                            locker.name,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        Text(
-                            "ID ${locker.id}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            locker.address,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Column {
+                            Text(
+                                locker.name,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            Text(
+                                "ID ${locker.id}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                locker.address,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
+
 
                 Spacer(Modifier.height(8.dp))
                 Divider()
@@ -135,25 +162,37 @@ fun SchedaDistributoreScreen(
 
                 val selectedTools = tools.filter { selected[it.id] == true }
 
-                Text("Distanza: ${locker.distanceKm} km")
-                Text("Articoli selezionati: ${selectedTools.size}")
-
                 Spacer(Modifier.height(12.dp))
 
-                Button(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = selectedTools.isNotEmpty(),
-                    onClick = {
-                        selectedTools.forEach {
-                            cartVM.add(it, locker.id)
-                        }
-                        navController.navigate(NavRoutes.Carrello.route)
-                    }
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Aggiungi al carrello (${selectedTools.size})")
-                }
+                    Column {
+                        Text(
+                            text = "${locker.distanceKm} km",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color(0xFFFFD600) // YellowPrimary, puoi sostituire con MaterialTheme.colorScheme.primary se definito
+                        )
 
-                Spacer(Modifier.height(16.dp))
+                        // Numero di articoli selezionati
+                        // Text("Articoli selezionati: ${selectedTools.size}", style = MaterialTheme.typography.bodyMedium)
+                    }
+
+                    // Pulsante aggiungi al carrello
+                    Button(
+                        enabled = selectedTools.isNotEmpty(),
+                        onClick = {
+                            selectedTools.forEach {
+                                cartVM.add(it, locker.id)
+                            }
+                            navController.navigate(NavRoutes.Carrello.route)
+                        }
+                    ) {
+                        Text("Aggiungi al carrello (${selectedTools.size})")
+                    }
+                }
             }
         }
     ) { padding ->

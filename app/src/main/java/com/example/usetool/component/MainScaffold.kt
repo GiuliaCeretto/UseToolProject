@@ -16,15 +16,34 @@ fun MainScaffold(
     navController: NavHostController,
     content: @Composable (PaddingValues) -> Unit
 ) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    val showBottomBar = currentRoute in listOf(
+        NavRoutes.Home.route,
+        NavRoutes.Search.route,
+        NavRoutes.Collegamento.route,
+        NavRoutes.Consulenza.route,
+        NavRoutes.Profilo.route,
+        NavRoutes.Carrello.route
+    )
+
+    val showTopBar = currentRoute != NavRoutes.Login.route
+
     Scaffold(
         topBar = {
-            AppTopBar(navController = navController)
+            if (showTopBar) {
+                AppTopBar(navController = navController)
+            }
         },
         bottomBar = {
-            BottomNavBar(navController)
+            if (showBottomBar) {
+                BottomNavBar(navController)
+            }
         }
     ) { padding ->
         content(padding)
     }
 }
+
 

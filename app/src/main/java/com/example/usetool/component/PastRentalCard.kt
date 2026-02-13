@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.example.usetool.R
 
 @Composable
-private fun PastRentalCard() {
+fun PastRentalCard() {
     Card(
         modifier = Modifier
             .fillMaxWidth()

@@ -23,10 +23,8 @@ import com.example.usetool.navigation.*
 import com.example.usetool.viewmodel.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.usetool.ui.theme.BluePrimary
-import com.example.usetool.ui.theme.YellowLight
 import com.example.usetool.ui.theme.YellowMedium
 import com.example.usetool.ui.theme.YellowPrimary
 

@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.usetool.component.*
+import com.example.usetool.ui.theme.Green2
+import com.example.usetool.ui.theme.GreyLight
 import com.example.usetool.viewmodel.ConsultViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,18 +55,24 @@ fun Consulenza(
             .padding(16.dp)
     ) {
 
-        // --- BARRA DI RICERCA ---
+        // BARRA DI RICERCA
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             label = { Text("Cerca esperto") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = GreyLight,
+                unfocusedBorderColor = GreyLight,
+                focusedLabelColor = GreyLight,
+                cursorColor = GreyLight
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- CAROSELLO PROFESSIONI ---
+        // CAROSELLO PROFESSIONI
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
@@ -74,7 +82,20 @@ fun Consulenza(
                 FilterChip(
                     selected = selectedProfession == null,
                     onClick = { selectedProfession = null },
-                    label = { Text("Tutte") }
+                    label = { Text("Tutte") },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Green2,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selectedProfession == null,
+                        borderColor = GreyLight,
+                        selectedBorderColor = GreyLight,
+                        borderWidth = 1.dp,
+                        selectedBorderWidth = 1.dp
+                    )
                 )
             }
 
@@ -82,14 +103,27 @@ fun Consulenza(
                 FilterChip(
                     selected = selectedProfession == profession,
                     onClick = { selectedProfession = profession },
-                    label = { Text(profession) }
+                    label = { Text(profession) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Green2,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selectedProfession == profession,
+                        borderColor = GreyLight,
+                        selectedBorderColor = GreyLight,
+                        borderWidth = 1.dp,
+                        selectedBorderWidth = 1.dp
+                    )
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // --- GRID DI CARD ---
+        // GRID DI CARD
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),

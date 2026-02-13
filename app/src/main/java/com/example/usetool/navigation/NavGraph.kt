@@ -9,14 +9,16 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.usetool.screens.*
+import com.example.usetool.screens.auth.LoginScreen
 import com.example.usetool.screens.search.*
 import com.example.usetool.screens.profile.*
 import com.example.usetool.screens.linking.*
 import com.example.usetool.screens.consulting.*
 import com.example.usetool.screens.tool.*
-import com.example.usetool.screens.distributor.*
+import com.example.usetool.screens.locker.*
 import com.example.usetool.screens.cart.*
-import com.example.usetool.screens.consult.SchedaConsulenteScreen
+import com.example.usetool.screens.consulting.*
+import com.example.usetool.screens.locker.SchedaDistributoreScreen
 import com.example.usetool.screens.payment.PagamentoScreen
 import com.example.usetool.viewmodel.*
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,7 +34,7 @@ fun AppNavGraph(
 ){
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Home.route,
+        startDestination = NavRoutes.Login.route,
         modifier = modifier
     ) {
 
@@ -108,6 +110,12 @@ fun AppNavGraph(
                 id = id,
                 viewModel = useToolViewModel,
                 cartVM = cartViewModel
+            )
+        }
+        composable(NavRoutes.Login.route) {
+            LoginScreen(
+                navController = navController,
+                userViewModel = userViewModel
             )
         }
     }

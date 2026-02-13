@@ -15,10 +15,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.example.usetool.model.CartItem
-
+import com.example.usetool.ui.theme.BlueLight
+import com.example.usetool.ui.theme.BluePrimary
 
 @Composable
 fun CartItemCard(
@@ -32,7 +35,10 @@ fun CartItemCard(
             .fillMaxWidth()
             .padding(vertical = 6.dp),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface // sfondo bianco
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline) // bordino GreyLight
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
 
@@ -79,56 +85,101 @@ fun CartItemCard(
                 // PREZZO
                 Column {
                     if (item.tool.pricePerHour != null) {
+                        // Mostra prezzo orario e totale in base alle ore
                         Text(
-                            text = "€ ${item.tool.pricePerHour}/h",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            buildAnnotatedString {
+                                append("€ ")
+                                withStyle(style = androidx.compose.ui.text.SpanStyle(
+                                    color = BluePrimary,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = MaterialTheme.typography.headlineSmall.fontSize
+                                )) {
+                                    append("%.2f".format(item.subtotal))
+                                }
+                                append(" (€${item.tool.pricePerHour}/h)")
+                            }
                         )
-                    } else {
+                    } else if (item.tool.purchasePrice != null) {
+                        // Prezzo totale per gli oggetti acquistabili
                         Text(
-                            text = "€ ${item.tool.purchasePrice}",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
+                            buildAnnotatedString {
+                                append("€ ")
+                                withStyle(style = androidx.compose.ui.text.SpanStyle(
+                                    color = BluePrimary,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = MaterialTheme.typography.headlineSmall.fontSize
+                                )) {
+                                    append("%.2f".format(item.subtotal))
+                                }
+                            }
                         )
                     }
                 }
 
-                // CONTATORE GRANDE
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
+
+                // CONTATORE PIÙ PICCOLO
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = BlueLight,
+                    modifier = Modifier.width(120.dp) // larghezza fissa più piccola
                 ) {
-
-                    // RIQUADRO CONTATORE
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        tonalElevation = 2.dp,
-                        border = BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        // - BUTTON
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
                         ) {
-
                             IconButton(
                                 onClick = onDecrease,
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(Icons.Default.Clear, contentDescription = "Meno")
                             }
+                        }
 
+                        Divider(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(1.dp)
+                        )
+
+                        // NUMERO
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
                                 text = if (item.tool.pricePerHour != null)
                                     "${item.durationHours} h"
                                 else
                                     "${item.quantity}",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp)
+                                fontWeight = FontWeight.Bold
                             )
+                        }
 
+                        Divider(
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            modifier = Modifier
+                                .fillMaxHeight()
+                                .width(1.dp)
+                        )
+
+                        // + BUTTON
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center
+                        ) {
                             IconButton(
                                 onClick = onIncrease,
                                 modifier = Modifier.size(32.dp)
@@ -137,17 +188,23 @@ fun CartItemCard(
                             }
                         }
                     }
+                }
 
-                    Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(12.dp))
 
-                    // PULSANTE ELIMINA
+                // PULSANTE ELIMINA DENTRO RICUADRO
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer
+                ) {
                     IconButton(
-                        onClick = onRemove
+                        onClick = onRemove,
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Rimuovi",
-                            tint = MaterialTheme.colorScheme.error
+                            tint = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
