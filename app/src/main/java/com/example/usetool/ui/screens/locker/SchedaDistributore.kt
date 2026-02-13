@@ -1,33 +1,37 @@
-package com.example.usetool.ui.screens.locker
+package com.example.usetool.screens.locker
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.ui.component.*
+import com.example.usetool.component.*
 import com.example.usetool.navigation.NavRoutes
-import com.example.usetool.ui.viewmodel.CartViewModel
-import com.example.usetool.ui.viewmodel.UseToolViewModel
-import androidx.compose.ui.platform.LocalDensity
-import com.example.usetool.data.dao.*
+import com.example.usetool.viewmodel.CartViewModel
+import com.example.usetool.viewmodel.UseToolViewModel
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.ui.draw.clip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,65 +41,103 @@ fun SchedaDistributoreScreen(
     viewModel: UseToolViewModel,
     cartVM: CartViewModel
 ) {
-    // Recupera il locker dalla lista osservata nel ViewModel (Entity)
-    val lockers by viewModel.lockers.collectAsState()
-    val locker = lockers.find { it.id == id } ?: return
-
-    // Osserva gli slot specifici di questo locker (Entity)
-    val lockerSlots by viewModel.getSlotsForLocker(id).collectAsState(initial = emptyList())
-
-    // Osserva tutti i tool per visualizzare i dettagli (Entity)
-    val allTools by viewModel.topTools.collectAsState()
-
-    // Filtra gli attrezzi presenti in questo distributore
-    val toolsInLocker = allTools.filter { tool ->
-        lockerSlots.any { it.toolId == tool.id }
-    }
+    val locker = viewModel.findLockerById(id) ?: return
+    val tools = viewModel.topTools.collectAsState().value
+        .filter { locker.toolsAvailable.contains(it.id) }
 
     val selected = remember { mutableStateMapOf<String, Boolean>() }
-    val sheetState = rememberBottomSheetScaffoldState()
+
+    val sheetState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded
+        )
+    )
 
     BottomSheetScaffold(
         scaffoldState = sheetState,
-        topBar = { AppTopBar(navController) },
-        sheetPeekHeight = 140.dp,
-        sheetContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-        sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        sheetDragHandle = { BottomSheetDefaults.DragHandle() },
-        sheetContent = {
+        sheetPeekHeight = 380.dp,
+        sheetContainerColor = MaterialTheme.colorScheme.surface,
+        sheetShape = RoundedCornerShape(topStart = 38.dp, topEnd = 24.dp),
+        sheetDragHandle = {
+            // Personalizzo il drag handle
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(24.dp)
+                    .background(MaterialTheme.colorScheme.background), // <- colore dello slider
+                contentAlignment = Alignment.Center
+            ) {
+                BottomSheetDefaults.DragHandle(
+                    modifier = Modifier
+                        .width(64.dp)
+                        .height(4.dp)
+                )
+            }
+        }, sheetContent = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
+                    .padding(16.dp),
             ) {
-                // HEADER - Utilizza LockerEntity
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(locker.name, style = MaterialTheme.typography.titleLarge)
+
+                // HEADER DISTRIBUTORE
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.dp, Color.LightGray),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.placeholder_locker),
+                            contentDescription = locker.name,
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        Spacer(Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                locker.name,
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            Text(
+                                "ID ${locker.id}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                locker.address,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
                 }
 
-                Text(locker.address, style = MaterialTheme.typography.bodyMedium)
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(8.dp))
+                Divider()
+                Spacer(Modifier.height(12.dp))
 
-                // STRUMENTI A NOLEGGIO (Filtra per tipo Entity)
+                // STRUMENTI A NOLEGGIO
                 Text("Strumenti a noleggio", style = MaterialTheme.typography.titleMedium)
 
-                toolsInLocker.filter { it.type == "noleggio" }
-                    .sortedByDescending { t ->
-                        lockerSlots.any { it.toolId == t.id && it.status == "DISPONIBILE" }
-                    }
+                tools.filter { it.pricePerHour != null }
+                    .sortedBy { !it.available }
                     .forEach { tool ->
                         DistributorToolRow(
                             tool = tool,
-                            allSlots = lockerSlots,
                             checked = selected[tool.id] == true,
                             onCheckedChange = { selected[tool.id] = it }
                         )
@@ -103,17 +145,14 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // MATERIALI DI CONSUMO (Filtra per tipo Entity)
+                // MATERIALI DI CONSUMO
                 Text("Materiali di consumo", style = MaterialTheme.typography.titleMedium)
 
-                toolsInLocker.filter { it.type == "acquisto" }
-                    .sortedByDescending { t ->
-                        lockerSlots.any { it.toolId == t.id && it.status == "DISPONIBILE" }
-                    }
+                tools.filter { it.purchasePrice != null }
+                    .sortedBy { !it.available }
                     .forEach { tool ->
                         DistributorToolRow(
                             tool = tool,
-                            allSlots = lockerSlots,
                             checked = selected[tool.id] == true,
                             onCheckedChange = { selected[tool.id] = it }
                         )
@@ -121,32 +160,44 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                val selectedTools = toolsInLocker.filter { selected[it.id] == true }
-                Text("Totale articoli selezionati: ${selectedTools.size}", style = MaterialTheme.typography.labelLarge)
+                val selectedTools = tools.filter { selected[it.id] == true }
 
                 Spacer(Modifier.height(12.dp))
 
-                // PULSANTE AGGIUNGI AL CARRELLO
-                Button(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = selectedTools.isNotEmpty(),
-                    onClick = {
-                        selectedTools.forEach { tool ->
-                            val slot = lockerSlots.find { it.toolId == tool.id }
-                            if (slot != null) {
-                                // CORRETTO: Passiamo direttamente le Entity, niente DTO nel ViewModel
-                                cartVM.addToolToCart(tool, slot)
-                            }
-                        }
-                        navController.navigate(NavRoutes.Carrello.route)
-                    }
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Aggiungi al carrello (${selectedTools.size})")
+                    Column {
+                        Text(
+                            text = "${locker.distanceKm} km",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color(0xFFFFD600) // YellowPrimary, puoi sostituire con MaterialTheme.colorScheme.primary se definito
+                        )
+
+                        // Numero di articoli selezionati
+                        // Text("Articoli selezionati: ${selectedTools.size}", style = MaterialTheme.typography.bodyMedium)
+                    }
+
+                    // Pulsante aggiungi al carrello
+                    Button(
+                        enabled = selectedTools.isNotEmpty(),
+                        onClick = {
+                            selectedTools.forEach {
+                                cartVM.add(it, locker.id)
+                            }
+                            navController.navigate(NavRoutes.Carrello.route)
+                        }
+                    ) {
+                        Text("Aggiungi al carrello (${selectedTools.size})")
+                    }
                 }
             }
         }
     ) { padding ->
-        // ================= MAPPA (UI PURA) =================
+
+        // MAPPA
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -159,7 +210,6 @@ fun SchedaDistributoreScreen(
                 contentScale = ContentScale.Crop
             )
 
-            // POSIZIONI FITTIZIE (Placeholder coordinate schermo)
             val userPosition = Offset(250f, 600f)
             val lockerPosition = Offset(550f, 350f)
 
@@ -175,7 +225,6 @@ fun SchedaDistributoreScreen(
 
             val density = LocalDensity.current
 
-            // MARKER UTENTE
             Icon(
                 imageVector = Icons.Default.Place,
                 contentDescription = "Posizione utente",
@@ -188,7 +237,6 @@ fun SchedaDistributoreScreen(
                     )
             )
 
-            // MARKER DISTRIBUTORE
             Icon(
                 imageVector = Icons.Default.LocationOn,
                 contentDescription = "Distributore",

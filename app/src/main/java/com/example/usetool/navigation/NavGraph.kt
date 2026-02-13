@@ -9,25 +9,17 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.usetool.screens.*
+import com.example.usetool.screens.auth.LoginScreen
 import com.example.usetool.screens.search.*
 import com.example.usetool.screens.profile.*
 import com.example.usetool.screens.linking.*
 import com.example.usetool.screens.consulting.*
 import com.example.usetool.screens.tool.*
-import com.example.usetool.screens.distributor.*
+import com.example.usetool.screens.locker.*
 import com.example.usetool.screens.cart.*
-import com.example.usetool.ui.screens.expert.SchedaConsulenteScreen
+import com.example.usetool.screens.consulting.*
+import com.example.usetool.screens.locker.SchedaDistributoreScreen
 import com.example.usetool.screens.payment.PagamentoScreen
-import com.example.usetool.ui.screens.cart.CarrelloScreen
-import com.example.usetool.ui.screens.home.HomeScreen
-import com.example.usetool.ui.screens.linking.CollegamentoScreen
-import com.example.usetool.ui.screens.locker.SchedaDistributoreScreen
-import com.example.usetool.ui.viewmodel.CartViewModel
-import com.example.usetool.ui.viewmodel.ExpertViewModel
-import com.example.usetool.ui.viewmodel.LinkingViewModel
-import com.example.usetool.ui.viewmodel.SearchViewModel
-import com.example.usetool.ui.viewmodel.UseToolViewModel
-import com.example.usetool.ui.viewmodel.UserViewModel
 import com.example.usetool.viewmodel.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,13 +29,12 @@ fun AppNavGraph(
     searchViewModel: SearchViewModel,
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
-    expertViewModel: ExpertViewModel,
     linkingViewModel: LinkingViewModel,
     modifier: Modifier = Modifier
 ){
     NavHost(
         navController = navController,
-        startDestination = NavRoutes.Home.route,
+        startDestination = NavRoutes.Login.route,
         modifier = modifier
     ) {
 
@@ -66,7 +57,7 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Consulenza.route) {
-            val consultViewModel: ExpertViewModel = viewModel()
+            val consultViewModel: ConsultViewModel = viewModel()
             Consulenza(navController, consultViewModel)
         }
 
@@ -119,6 +110,12 @@ fun AppNavGraph(
                 id = id,
                 viewModel = useToolViewModel,
                 cartVM = cartViewModel
+            )
+        }
+        composable(NavRoutes.Login.route) {
+            LoginScreen(
+                navController = navController,
+                userViewModel = userViewModel
             )
         }
     }
