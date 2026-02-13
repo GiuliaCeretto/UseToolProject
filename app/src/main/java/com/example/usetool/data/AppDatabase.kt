@@ -8,40 +8,45 @@ import com.example.usetool.data.dao.*
 
 @Database(
     entities = [
-        ToolEntity::class,
-        ExpertEntity::class,
-        LockerEntity::class,
-        PurchaseEntity::class,
         UserEntity::class,
+        LockerEntity::class,
+        SlotEntity::class,
+        ToolEntity::class,
         RentalEntity::class,
-        SlotEntity::class
+        PurchaseEntity::class,
+        ExpertEntity::class,
+        CartEntity::class,
+        CartItemEntity::class
     ],
     version = 1,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun toolDao(): ToolDao
-    abstract fun expertDao(): ExpertDao
-    abstract fun lockerDao(): LockerDao
-    abstract fun purchaseDao(): PurchaseDao
     abstract fun userDao(): UserDao
-    abstract fun rentalDao(): RentalDao
+    abstract fun lockerDao(): LockerDao
     abstract fun slotDao(): SlotDao
+    abstract fun toolDao(): ToolDao
+    abstract fun rentalDao(): RentalDao
+    abstract fun purchaseDao(): PurchaseDao
+    abstract fun expertDao(): ExpertDao
+    abstract fun cartDao(): CartDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
+        // Versione ottimizzata della funzione getDatabase
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+                Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "use_tool_database"
-                ).build()
-                INSTANCE = instance
-                instance
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    .also { INSTANCE = it }
             }
         }
     }

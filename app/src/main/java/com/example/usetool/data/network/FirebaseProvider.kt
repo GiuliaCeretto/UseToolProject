@@ -3,7 +3,6 @@ package com.example.usetool.data.network
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 
-// Contiene solo i riferimenti ai nodi di Firebase che ci servono per ottenere i dati
 class FirebaseProvider {
     private val db: DatabaseReference = FirebaseDatabase.getInstance().reference
 

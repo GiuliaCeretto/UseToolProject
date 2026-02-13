@@ -7,57 +7,63 @@ import com.example.usetool.data.dto.SlotDTO
 import com.example.usetool.data.dto.ToolDTO
 import com.example.usetool.data.repository.CartRepository
 import com.example.usetool.data.repository.OrderRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.UUID
 
-data class CartItem(
-    val id: String = UUID.randomUUID().toString(),
-    val tool: ToolDTO,
-    val slot: SlotDTO,
-    var durationHours: Int = 24
-) {
-    val subtotal: Double get() = if (tool.type == "noleggio") tool.price * durationHours else tool.price
-}
-
+@OptIn(ExperimentalCoroutinesApi::class) // RISOLTO: Sì, l'Opt-in è necessario qui
 class CartViewModel(
     private val cartRepository: CartRepository,
     private val orderRepository: OrderRepository
 ) : ViewModel() {
 
-    private val userId = "user_demo_123" // Da recuperare tramite Auth
+    private val userId = "user_demo_123"
 
-    // Osserva il carrello remoto convertendolo in CartItem per la UI
-    val items: StateFlow<List<CartItem>> = cartRepository.getUserCart(userId)
-        .map { dto ->
-            dto?.items?.values?.map { slot ->
-                // Nota: In un caso reale, qui servirebbe una lista di Tool per mappare i dettagli
-                CartItem(tool = ToolDTO(id = slot.toolId, name = "Tool ${slot.toolId}", price = 10.0, quantity = 1), slot = slot)
-            } ?: emptyList()
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // Il flusso parte al primo ascolto e rimane attivo finché il ViewModel esiste
+    val cartHeader = cartRepository.getActiveCart(userId)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Lazily,
+            initialValue = null
+        )
 
-    val total: Double get() = items.value.sumOf { it.subtotal }
+    // Anche per gli elementi del carrello usiamo Lazily per coerenza
+    val cartItems = cartHeader.flatMapLatest { cart ->
+        if (cart != null) cartRepository.getLocalCartItems(cart.id)
+        else flowOf(emptyList())
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Lazily,
+        initialValue = emptyList()
+    )
 
-    fun add(tool: ToolDTO, slot: SlotDTO) {
+    fun addToolToCart(tool: ToolDTO, slot: SlotDTO) {
         viewModelScope.launch {
             try {
                 cartRepository.addItemToCart(userId, tool, slot)
             } catch (e: Exception) {
-                // Gestire errore (es. slot occupato)
+                e.printStackTrace()
             }
         }
     }
 
-    fun remove(slotId: String, allTools: List<ToolDTO>) {
+    fun removeItem(slotId: String, allTools: List<ToolDTO>) {
         viewModelScope.launch {
-            cartRepository.removeItemFromCart(userId, slotId, allTools)
+            try {
+                cartRepository.removeItemFromCart(userId, slotId, allTools)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
-    fun checkout(currentCart: CartDTO, toolsList: List<ToolDTO>) {
+    fun performCheckout(currentCart: CartDTO, toolsList: List<ToolDTO>) {
         viewModelScope.launch {
-            orderRepository.processCheckout(userId, currentCart, toolsList)
+            try {
+                orderRepository.processCheckout(userId, currentCart, toolsList)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

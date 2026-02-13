@@ -54,4 +54,9 @@ class DataSource(private val dao: FirebaseProvider) {
         observeList(dao.getRentalsRef().child(userId), RentalDTO::class.java)
     fun observeProfile(userId: String): Flow<UserDTO?> =
         observeSingle(dao.getUsersRef().child(userId), UserDTO::class.java)
+
+    // Funzione di Lettura
+    fun updateMultipleNodes(updates: Map<String, Any?>) {
+        dao.getToolsRef().parent?.updateChildren(updates)
+    }
 }

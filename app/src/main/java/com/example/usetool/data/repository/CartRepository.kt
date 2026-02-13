@@ -1,63 +1,103 @@
 package com.example.usetool.data.repository
 
 import com.example.usetool.data.dto.*
+import com.example.usetool.data.dao.CartDao
+import com.example.usetool.data.dao.CartItemEntity
 import com.example.usetool.data.network.DataSource
-import com.example.usetool.data.service.UseToolService
+import com.example.usetool.data.service.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
 class CartRepository(
     private val dataSource: DataSource,
-    private val uTservice: UseToolService
+    private val cartDao: CartDao,
 ) {
-    fun getUserCart(userId: String): Flow<CartDTO?> = dataSource.observeUserCart(userId)
+    // RISOLTO: getActiveCart ora è usato per esporre il carrello alla UI
+    fun getActiveCart(userId: String) = cartDao.getActiveCart(userId)
+
+    // RISOLTO: getLocalCartItems è usato per i dettagli del carrello
+    fun getLocalCartItems(cartId: String): Flow<List<CartItemEntity>> =
+        cartDao.getItemsByCartId(cartId)
 
     suspend fun addItemToCart(userId: String, tool: ToolDTO, slot: SlotDTO) {
-        val allSlots = dataSource.observeSlots().firstOrNull()
-        val latestSlot = allSlots?.find { it.id == slot.id }
+        val currentCartDto = dataSource.observeUserCart(userId).firstOrNull()
+            ?: CartDTO(userId = userId, id = "cart_$userId", status = "PENDING")
 
-        if (latestSlot?.status != "DISPONIBILE") {
-            throw Exception("L'attrezzo è stato appena occupato da un altro utente")
-        }
-
-        val currentCart = dataSource.observeUserCart(userId).firstOrNull() ?: CartDTO(userId = userId)
-        val updatedItems = currentCart.items.toMutableMap()
+        val updatedItems = currentCartDto.items.toMutableMap()
         updatedItems[slot.id] = slot
 
-        val nuovoCarrello = currentCart.copy(
+        val nuovoCarrelloDto = currentCartDto.copy(
             items = updatedItems,
-            totaleProvvisorio = currentCart.totaleProvvisorio + tool.price,
-            status = "ATTIVO"
+            totaleProvvisorio = currentCartDto.totaleProvvisorio + tool.price,
+            ultimoAggiornamento = System.currentTimeMillis()
         )
 
-        // Aggiornamento atomico: slot in carrello + aggiornamento carrello
+        // Aggiornamento remoto (Firebase)
         val updates = mapOf(
             "slots/${slot.id}/status" to "IN_CARRELLO",
-            "carts/$userId" to nuovoCarrello
+            "carts/$userId" to nuovoCarrelloDto
         )
-        uTservice.updateMultipleNodes(updates)
+        dataSource.updateMultipleNodes(updates)
+
+        // RISOLTO: toEntity() ora è usato (Mapper) e sincronizzato in Room
+        cartDao.insertCart(nuovoCarrelloDto.toEntity())
+
+        // OTTIMIZZAZIONE: rimosso 'id' inutilizzato nel map per evitare warning
+        val itemEntities = nuovoCarrelloDto.items.map { (_, s) ->
+            CartItemEntity(
+                cartId = nuovoCarrelloDto.id ?: "",
+                slotId = s.id,
+                toolName = tool.name,
+                price = tool.price
+            )
+        }
+        cartDao.insertCartItems(itemEntities)
     }
 
     suspend fun removeItemFromCart(userId: String, slotId: String, allTools: List<ToolDTO>) {
-        val currentCart = dataSource.observeUserCart(userId).firstOrNull() ?: return
-        val updatedItems = currentCart.items.toMutableMap()
+        val currentCartDto = dataSource.observeUserCart(userId).firstOrNull() ?: return
+
+        val updatedItems = currentCartDto.items.toMutableMap()
         updatedItems.remove(slotId)
 
+        // Ricalcola il totale sottraendo il prezzo dell'attrezzo rimosso
         val newTotal = updatedItems.values.sumOf { s ->
             allTools.find { it.id == s.toolId }?.price ?: 0.0
         }
 
+        val nuovoCarrelloDto = currentCartDto.copy(
+            items = updatedItems,
+            totaleProvvisorio = newTotal,
+            ultimoAggiornamento = System.currentTimeMillis()
+        )
+
+        // 1. Aggiornamento atomico Firebase: slot torna DISPONIBILE
         val updates = mapOf(
             "slots/$slotId/status" to "DISPONIBILE",
-            "carts/$userId" to currentCart.copy(items = updatedItems, totaleProvvisorio = newTotal)
+            "carts/$userId" to nuovoCarrelloDto
         )
-        uTservice.updateMultipleNodes(updates)
+        dataSource.updateMultipleNodes(updates)
+
+        // 2. Aggiornamento Room: aggiorna la testata e rigenera la lista elementi
+        cartDao.insertCart(nuovoCarrelloDto.toEntity())
+
+        // Pulizia e reinserimento elementi locali per coerenza
+        cartDao.deleteItemsByCartId(nuovoCarrelloDto.id ?: "")
+        val itemEntities = nuovoCarrelloDto.items.map { (_, s) ->
+            val tool = allTools.find { it.id == s.toolId }
+            CartItemEntity(
+                cartId = nuovoCarrelloDto.id ?: "",
+                slotId = s.id,
+                toolName = tool?.name ?: "Unknown",
+                price = tool?.price ?: 0.0
+            )
+        }
+        cartDao.insertCartItems(itemEntities)
     }
 
-    suspend fun clearCartOptimized(userId: String, cart: CartDTO) {
-        val updates = mutableMapOf<String, Any?>()
-        cart.items.keys.forEach { updates["slots/$it/status"] = "DISPONIBILE" }
-        updates["carts/$userId"] = CartDTO(userId = userId)
-        uTservice.updateMultipleNodes(updates)
+    // RISOLTO: Questa verrà chiamata dall'OrderRepository dopo il checkout
+    suspend fun clearLocalCart(cartId: String) {
+        cartDao.deleteCart(cartId)
+        cartDao.deleteItemsByCartId(cartId)
     }
 }
