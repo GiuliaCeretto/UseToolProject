@@ -10,15 +10,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.usetool.model.Tool
+import com.example.usetool.R
+import com.example.usetool.data.dao.SlotEntity
+import com.example.usetool.data.dao.ToolEntity
 
 @Composable
 fun DistributorToolRow(
-    tool: Tool,
+    tool: ToolEntity,
+    allSlots: List<SlotEntity>, // Lista degli slot passata dalla UI (osservata nel ViewModel)
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    val alpha = if (tool.available) 1f else 0.4f
+    // Verifica disponibilità reale basata sullo stato degli slot nel DB locale
+    val isAvailable = allSlots.any { it.toolId == tool.id && it.status == "DISPONIBILE" }
+    val alpha = if (isAvailable) 1f else 0.4f
 
     Card(
         modifier = Modifier
@@ -31,14 +36,15 @@ fun DistributorToolRow(
                 .padding(8.dp)
                 .toggleable(
                     value = checked,
-                    enabled = tool.available,
+                    enabled = isAvailable,
                     onValueChange = onCheckedChange
                 ),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
+            // Utilizzo di un'immagine basata sul nome della risorsa o placeholder
             Image(
-                painter = painterResource(tool.imageRes),
+                painter = painterResource(id = R.drawable.placeholder_tool),
                 contentDescription = tool.name,
                 modifier = Modifier.size(64.dp)
             )
@@ -46,28 +52,32 @@ fun DistributorToolRow(
             Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(tool.name, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = tool.name,
+                    style = MaterialTheme.typography.titleSmall
+                )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    tool.technicalData.values.take(3).forEach {
-                        Text(it, style = MaterialTheme.typography.labelSmall)
-                    }
-                }
+                // Visualizzazione descrizione tecnica dall'Entity
+                Text(
+                    text = tool.description,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1
+                )
 
                 Spacer(Modifier.height(4.dp))
 
+                // Prezzo formattato recuperato da ToolEntity
                 Text(
-                    text = tool.pricePerHour?.let { "€$it / h" }
-                        ?: tool.purchasePrice?.let { "€$it" }
-                        ?: "",
+                    text = "€${"%.2f".format(tool.price)}${if (tool.type == "noleggio") " / h" else ""}",
                     style = MaterialTheme.typography.labelMedium
                 )
             }
 
+            // Checkbox abilitato solo se l'attrezzo è disponibile nello slot
             Checkbox(
                 checked = checked,
                 onCheckedChange = null,
-                enabled = tool.available
+                enabled = isAvailable
             )
         }
     }

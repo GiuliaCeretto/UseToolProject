@@ -1,7 +1,8 @@
-package com.example.usetool.screens.distributor
+package com.example.usetool.ui.screens.locker
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,11 +22,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.component.*
+import com.example.usetool.ui.component.*
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.viewmodel.CartViewModel
 import com.example.usetool.ui.viewmodel.UseToolViewModel
 import androidx.compose.ui.platform.LocalDensity
+import com.example.usetool.data.dao.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,31 +37,39 @@ fun SchedaDistributoreScreen(
     viewModel: UseToolViewModel,
     cartVM: CartViewModel
 ) {
-    val locker = viewModel.findLockerById(id) ?: return
-    val tools = viewModel.topTools.collectAsState().value
-        .filter { locker.toolsAvailable.contains(it.id) }
+    // Recupera il locker dalla lista osservata nel ViewModel (Entity)
+    val lockers by viewModel.lockers.collectAsState()
+    val locker = lockers.find { it.id == id } ?: return
+
+    // Osserva gli slot specifici di questo locker (Entity)
+    val lockerSlots by viewModel.getSlotsForLocker(id).collectAsState(initial = emptyList())
+
+    // Osserva tutti i tool per visualizzare i dettagli (Entity)
+    val allTools by viewModel.topTools.collectAsState()
+
+    // Filtra gli attrezzi presenti in questo distributore
+    val toolsInLocker = allTools.filter { tool ->
+        lockerSlots.any { it.toolId == tool.id }
+    }
 
     val selected = remember { mutableStateMapOf<String, Boolean>() }
-
     val sheetState = rememberBottomSheetScaffoldState()
 
     BottomSheetScaffold(
         scaffoldState = sheetState,
-        topBar = { AppTopBar(navController, locker.name) },
+        topBar = { AppTopBar(navController) },
         sheetPeekHeight = 140.dp,
         sheetContainerColor = MaterialTheme.colorScheme.surfaceVariant,
         sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         sheetDragHandle = { BottomSheetDefaults.DragHandle() },
         sheetContent = {
-
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-
-                // HEADER
+                // HEADER - Utilizza LockerEntity
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
@@ -71,18 +81,21 @@ fun SchedaDistributoreScreen(
                     Text(locker.name, style = MaterialTheme.typography.titleLarge)
                 }
 
-                Text(locker.address)
+                Text(locker.address, style = MaterialTheme.typography.bodyMedium)
 
                 Spacer(Modifier.height(16.dp))
 
-                // STRUMENTI A NOLEGGIO
+                // STRUMENTI A NOLEGGIO (Filtra per tipo Entity)
                 Text("Strumenti a noleggio", style = MaterialTheme.typography.titleMedium)
 
-                tools.filter { it.pricePerHour != null }
-                    .sortedBy { !it.available }
+                toolsInLocker.filter { it.type == "noleggio" }
+                    .sortedByDescending { t ->
+                        lockerSlots.any { it.toolId == t.id && it.status == "DISPONIBILE" }
+                    }
                     .forEach { tool ->
                         DistributorToolRow(
                             tool = tool,
+                            allSlots = lockerSlots,
                             checked = selected[tool.id] == true,
                             onCheckedChange = { selected[tool.id] = it }
                         )
@@ -90,14 +103,17 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // MATERIALI DI CONSUMO
+                // MATERIALI DI CONSUMO (Filtra per tipo Entity)
                 Text("Materiali di consumo", style = MaterialTheme.typography.titleMedium)
 
-                tools.filter { it.purchasePrice != null }
-                    .sortedBy { !it.available }
+                toolsInLocker.filter { it.type == "acquisto" }
+                    .sortedByDescending { t ->
+                        lockerSlots.any { it.toolId == t.id && it.status == "DISPONIBILE" }
+                    }
                     .forEach { tool ->
                         DistributorToolRow(
                             tool = tool,
+                            allSlots = lockerSlots,
                             checked = selected[tool.id] == true,
                             onCheckedChange = { selected[tool.id] = it }
                         )
@@ -105,19 +121,22 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                val selectedTools = tools.filter { selected[it.id] == true }
-
-                Text("Distanza: ${locker.distanceKm} km")
-                Text("Totale articoli: ${selectedTools.size}")
+                val selectedTools = toolsInLocker.filter { selected[it.id] == true }
+                Text("Totale articoli selezionati: ${selectedTools.size}", style = MaterialTheme.typography.labelLarge)
 
                 Spacer(Modifier.height(12.dp))
 
+                // PULSANTE AGGIUNGI AL CARRELLO
                 Button(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = selectedTools.isNotEmpty(),
                     onClick = {
-                        selectedTools.forEach {
-                            cartVM.add(it, locker.id)
+                        selectedTools.forEach { tool ->
+                            val slot = lockerSlots.find { it.toolId == tool.id }
+                            if (slot != null) {
+                                // CORRETTO: Passiamo direttamente le Entity, niente DTO nel ViewModel
+                                cartVM.addToolToCart(tool, slot)
+                            }
                         }
                         navController.navigate(NavRoutes.Carrello.route)
                     }
@@ -127,15 +146,12 @@ fun SchedaDistributoreScreen(
             }
         }
     ) { padding ->
-
-        // ================= MAPPA =================
+        // ================= MAPPA (UI PURA) =================
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-
-            // MAPPA
             Image(
                 painter = painterResource(R.drawable.placeholder_map),
                 contentDescription = "Mappa distributore",
@@ -143,24 +159,22 @@ fun SchedaDistributoreScreen(
                 contentScale = ContentScale.Crop
             )
 
-            // POSIZIONI FAKE (coordinate schermo)
+            // POSIZIONI FITTIZIE (Placeholder coordinate schermo)
             val userPosition = Offset(250f, 600f)
             val lockerPosition = Offset(550f, 350f)
 
-            // LINEA TRATTEGGIATA
             Canvas(modifier = Modifier.fillMaxSize()) {
                 drawLine(
                     color = Color.Blue,
                     start = userPosition,
                     end = lockerPosition,
                     strokeWidth = 6f,
-                    pathEffect = PathEffect.dashPathEffect(
-                        floatArrayOf(20f, 12f)
-                    )
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(20f, 12f))
                 )
             }
 
             val density = LocalDensity.current
+
             // MARKER UTENTE
             Icon(
                 imageVector = Icons.Default.Place,

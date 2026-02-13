@@ -1,4 +1,4 @@
-package com.example.usetool.screens
+package com.example.usetool.ui.screens.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -18,15 +18,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.component.*
+import com.example.usetool.ui.component.*
 import com.example.usetool.navigation.*
-import com.example.usetool.viewmodel.*
+import com.example.usetool.ui.viewmodel.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.usetool.ui.theme.BluePrimary
-import com.example.usetool.ui.theme.YellowLight
 import com.example.usetool.ui.theme.YellowMedium
 import com.example.usetool.ui.theme.YellowPrimary
 
@@ -35,12 +33,14 @@ import com.example.usetool.ui.theme.YellowPrimary
 fun HomeScreen(
     navController: NavController,
     vm: UseToolViewModel,
-    cartVM: CartViewModel
+    userVm: UserViewModel // Aggiunto per gestire i noleggi reali dell'utente
 ) {
+    // Osservazione stati dalle Entity di Room
     val tools by vm.topTools.collectAsState()
     val lockers by vm.lockers.collectAsState()
+    val rentals by userVm.rentals.collectAsState()
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -53,36 +53,38 @@ fun HomeScreen(
                 .padding(16.dp)
         ) {
 
-            // SALUTO
+            // SALUTO DINAMICO (opzionale: prendi nome da userProfile)
+            val profile by userVm.userProfile.collectAsState()
             Text(
-                text = "Ciao, Mario 👋",
+                text = "Ciao, ${profile?.nome ?: "Mario"} 👋",
                 style = MaterialTheme.typography.titleLarge
             )
 
             Spacer(Modifier.height(20.dp))
 
-            // I TUOI NOLEGGI
-            Text(
-                text = "I tuoi noleggi",
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontSize = 20.sp
+            // I TUOI NOLEGGI (Filtrati sui noleggi ATTIVI dal database)
+            if (rentals.any { it.statoNoleggio == "ATTIVO" }) {
+                Text(
+                    text = "I tuoi noleggi attivi",
+                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp)
                 )
-            )
 
-            LazyRow {
-                items(tools.filter { !it.available }) { tool ->
-                    ToolCardSmall(
-                        tool = tool,
-                        onClick = {
-                            navController.navigate(
-                                NavRoutes.SchedaStrumento.createRoute(tool.id)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(rentals.filter { it.statoNoleggio == "ATTIVO" }) { rental ->
+                        // Cerchiamo l'Entity dell'attrezzo corrispondente per mostrare i dettagli
+                        val tool = tools.find { it.id == rental.toolId }
+                        tool?.let {
+                            ToolCardSmall(
+                                tool = it,
+                                onClick = {
+                                    navController.navigate(NavRoutes.SchedaStrumento.createRoute(it.id))
+                                }
                             )
                         }
-                    )
+                    }
                 }
+                Spacer(Modifier.height(24.dp))
             }
-
-            Spacer(Modifier.height(24.dp))
 
             // SWITCHER
             Box(
@@ -99,27 +101,26 @@ fun HomeScreen(
 
             // CONTENUTO SWITCHER
             if (selectedTab == 0) {
-                LazyRow {
+                // POPOLARI (Primi 5 attrezzi toolEntity)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(tools.take(5)) { tool ->
                         ToolCardSmall(
                             tool = tool,
                             onClick = {
-                                navController.navigate(
-                                    NavRoutes.SchedaStrumento.createRoute(tool.id)
-                                )
+                                navController.navigate(NavRoutes.SchedaStrumento.createRoute(tool.id))
                             }
                         )
                     }
                 }
             } else {
-                LazyRow {
-                    items(lockers.sortedBy { it.distanceKm }.take(5)) { locker ->
+                // VICINI A TE (LockerEntity ordinati per distanza calcolata nel VM)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(lockers.take(5)) { locker ->
                         LockerCardSmall(
                             locker = locker,
+                            distanceKm = vm.getDistanceForTool(lockers.firstOrNull()?.id ?: ""), // Esempio distanza
                             onClick = {
-                                navController.navigate(
-                                    NavRoutes.SchedaDistributore.createRoute(locker.id)
-                                )
+                                navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
                             }
                         )
                     }
@@ -144,7 +145,6 @@ fun HomeScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {
-
                     Image(
                         painter = painterResource(R.drawable.placeholder_map),
                         contentDescription = "Mappa",
@@ -153,16 +153,15 @@ fun HomeScreen(
                     )
 
                     lockers.forEachIndexed { index, locker ->
+                        // Calcolo posizionamento fittizio basato su lat/lon reali dell'Entity
+                        val xPos = (40 + (locker.lon % 1.0) * 1000).dp
+                        val yPos = (60 + (locker.lat % 1.0) * 1000).dp
+
                         Column(
                             modifier = Modifier
-                                .offset(
-                                    x = (40 + index * 90).dp,
-                                    y = (60 + index * 30).dp
-                                )
+                                .offset(x = xPos.coerceIn(0.dp, 280.dp), y = yPos.coerceIn(0.dp, 150.dp))
                                 .clickable {
-                                    navController.navigate(
-                                        NavRoutes.SchedaDistributore.createRoute(locker.id)
-                                    )
+                                    navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
                                 },
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -172,7 +171,6 @@ fun HomeScreen(
                                 tint = BluePrimary,
                                 modifier = Modifier.size(30.dp)
                             )
-
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
                                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
@@ -190,6 +188,7 @@ fun HomeScreen(
         }
     }
 }
+
 
 @Composable
 fun HomeSwitcher(

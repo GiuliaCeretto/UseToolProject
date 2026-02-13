@@ -4,72 +4,130 @@ import com.example.usetool.data.dto.*
 import com.example.usetool.data.dao.*
 
 // --- TOOL ---
-fun ToolDTO.toEntity(): ToolEntity = ToolEntity(id, name, description, price, type)
+fun ToolDTO.toEntity(): ToolEntity = ToolEntity(
+    id = id,
+    name = name,
+    description = description,
+    price = price,
+    type = type
+)
+
+fun ToolEntity.toDto(): ToolDTO = ToolDTO(
+    id = this.id,
+    name = this.name,
+    description = this.description,
+    price = this.price,
+    quantity = 1, // Parametro obbligatorio in ToolDTO senza default
+    type = this.type
+)
+
 fun List<ToolDTO>.toEntityList(): List<ToolEntity> = this.map { it.toEntity() }
 
 // --- SLOT ---
-fun SlotDTO.toEntity(): SlotEntity = SlotEntity(id, lockerId, toolId, status, quantity)
+fun SlotDTO.toEntity(): SlotEntity = SlotEntity(
+    id = id,
+    lockerId = lockerId,
+    toolId = toolId,
+    status = status,
+    quantity = quantity
+)
+
+fun SlotEntity.toDto(): SlotDTO = SlotDTO(
+    id = this.id,
+    lockerId = this.lockerId,
+    toolId = this.toolId,
+    status = this.status,
+    quantity = this.quantity
+)
+
 fun List<SlotDTO>.toEntityList(): List<SlotEntity> = this.map { it.toEntity() }
+
+// --- USER ---
+fun UserDTO.toEntity(): UserEntity = UserEntity(
+    email = email ?: "",
+    nome = nome ?: "",
+    cognome = cognome ?: "",
+    telefono = telefono ?: "",
+    indirizzo = indirizzo ?: ""
+)
+
+fun UserEntity.toDto(): UserDTO = UserDTO(
+    email = this.email,
+    nome = this.nome,
+    cognome = this.cognome,
+    telefono = this.telefono,
+    indirizzo = this.indirizzo
+    // passwordHash e passwordSalt rimangono null o gestiti altrove
+)
 
 // --- LOCKER ---
 fun LockerDTO.toEntity(): LockerEntity = LockerEntity(
-    id = this.id,
-    name = this.name,
-    address = this.address,
-    city = this.city,
-    lat = this.lat ,
-    lon = this.lon
+    id = id,
+    name = name,
+    address = address,
+    city = city,
+    lat = lat,
+    lon = lon
 )
+
 fun List<LockerDTO>.toEntityList(): List<LockerEntity> = this.map { it.toEntity() }
 
 // --- PURCHASE ---
 fun PurchaseDTO.toEntity(): PurchaseEntity = PurchaseEntity(
-    id = this.id ?: "",
-    toolName = this.toolName ?: "",
-    prezzoPagato = this.prezzoPagato,
-    dataAcquisto = this.dataAcquisto,
-    lockerId = this.lockerId ?: ""
+    id = id ?: "",
+    toolName = toolName ?: "",
+    prezzoPagato = prezzoPagato,
+    dataAcquisto = dataAcquisto,
+    lockerId = lockerId ?: ""
 )
+
 fun List<PurchaseDTO>.toEntityList(): List<PurchaseEntity> = this.map { it.toEntity() }
 
 // --- RENTAL ---
 fun RentalDTO.toEntity(): RentalEntity = RentalEntity(
-    id = this.id ?: "",
-    userId = this.userId ?: "",
-    toolId = this.toolId ?: "",
-    toolName = this.toolName ?: "",
-    lockerId = this.lockerId ?: "",
-    slotId = this.slotId ?: "",
-    dataInizio = this.dataInizio,
-    dataFinePrevista = this.dataFinePrevista,
-    statoNoleggio = this.statoNoleggio,
-    costoTotale = this.costoTotale
+    id = id ?: "",
+    userId = userId ?: "",
+    toolId = toolId ?: "",
+    toolName = toolName ?: "",
+    lockerId = lockerId ?: "",
+    slotId = slotId ?: "",
+    dataInizio = dataInizio,
+    dataFinePrevista = dataFinePrevista,
+    statoNoleggio = statoNoleggio ?: "",
+    costoTotale = costoTotale
 )
+
 fun List<RentalDTO>.toEntityList(): List<RentalEntity> = this.map { it.toEntity() }
 
+// --- EXPERT ---
 fun ExpertDTO.toEntity(): ExpertEntity = ExpertEntity(
-    id = this.id,
-    firstName = this.firstName,
-    lastName = this.lastName,
-    profession = this.profession,
-    bio = this.bio
+    id = id,
+    firstName = firstName,
+    lastName = lastName,
+    profession = profession,
+    bio = bio
 )
+
 fun List<ExpertDTO>.toEntityList(): List<ExpertEntity> = this.map { it.toEntity() }
 
 // --- CART ---
 fun CartDTO.toEntity(): CartEntity = CartEntity(
-    id = this.id ?: "",
-    userId = this.userId ?: "",
-    status = this.status, // Già non null
-    totaleProvvisorio = this.totaleProvvisorio, // Già non null
-    ultimoAggiornamento = this.ultimoAggiornamento // Già non null
+    id = id ?: "",
+    userId = userId ?: "",
+    status = status,
+    totaleProvvisorio = totaleProvvisorio,
+    ultimoAggiornamento = ultimoAggiornamento
 )
 
-// --- USER ---
-fun UserDTO.toEntity(): UserEntity = UserEntity(
-    email = this.email ?: "",
-    nome = this.nome ?: "",
-    cognome = this.cognome ?: "",
-    telefono = this.telefono ?: "",
-    indirizzo = this.indirizzo ?: ""
+/**
+ * Converte la testata del carrello (Entity) in DTO per Firebase,
+ * includendo la mappa degli item convertiti in SlotDTO.
+ */
+fun CartEntity.toDto(itemsMap: Map<String, SlotDTO>): CartDTO = CartDTO(
+    id = this.id,
+    userId = this.userId,
+    items = itemsMap,
+    totaleProvvisorio = this.totaleProvvisorio,
+    status = this.status,
+    ultimoAggiornamento = this.ultimoAggiornamento
 )

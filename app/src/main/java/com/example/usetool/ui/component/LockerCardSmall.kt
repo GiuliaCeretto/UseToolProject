@@ -4,8 +4,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,15 +11,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.usetool.R
-import com.example.usetool.model.Locker
+import com.example.usetool.data.dao.LockerEntity
 
 @Composable
 fun LockerCardSmall(
-    locker: Locker,
+    locker: LockerEntity, // Utilizza LockerEntity dal DAO
+    distanceKm: Double?, // Distanza passata esternamente (non presente nell'Entity)
     onClick: () -> Unit
 ) {
     Card(
@@ -39,8 +37,6 @@ fun LockerCardSmall(
                 .padding(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            // IMMAGINE
             Image(
                 painter = painterResource(R.drawable.placeholder_locker),
                 contentDescription = locker.name,
@@ -52,12 +48,11 @@ fun LockerCardSmall(
 
             Spacer(modifier = Modifier.width(10.dp))
 
-            // TESTI
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.Center
             ) {
-
+                // Nome recuperato da LockerEntity
                 Text(
                     text = locker.name,
                     style = MaterialTheme.typography.bodyMedium,
@@ -73,13 +68,15 @@ fun LockerCardSmall(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                Text(
-                    text = "${locker.distanceKm} km",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                // Visualizzazione distanza se disponibile
+                distanceKm?.let {
+                    Text(
+                        text = "%.1f km".format(it),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }
 }
-

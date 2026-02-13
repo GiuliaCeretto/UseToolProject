@@ -16,9 +16,14 @@ import com.example.usetool.screens.consulting.*
 import com.example.usetool.screens.tool.*
 import com.example.usetool.screens.distributor.*
 import com.example.usetool.screens.cart.*
-import com.example.usetool.screens.consult.SchedaConsulenteScreen
+import com.example.usetool.ui.screens.expert.SchedaConsulenteScreen
 import com.example.usetool.screens.payment.PagamentoScreen
+import com.example.usetool.ui.screens.cart.CarrelloScreen
+import com.example.usetool.ui.screens.home.HomeScreen
+import com.example.usetool.ui.screens.linking.CollegamentoScreen
+import com.example.usetool.ui.screens.locker.SchedaDistributoreScreen
 import com.example.usetool.ui.viewmodel.CartViewModel
+import com.example.usetool.ui.viewmodel.ExpertViewModel
 import com.example.usetool.ui.viewmodel.LinkingViewModel
 import com.example.usetool.ui.viewmodel.SearchViewModel
 import com.example.usetool.ui.viewmodel.UseToolViewModel
@@ -32,6 +37,7 @@ fun AppNavGraph(
     searchViewModel: SearchViewModel,
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
+    expertViewModel: ExpertViewModel,
     linkingViewModel: LinkingViewModel,
     modifier: Modifier = Modifier
 ){
@@ -60,7 +66,7 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Consulenza.route) {
-            val consultViewModel: ConsultViewModel = viewModel()
+            val consultViewModel: ExpertViewModel = viewModel()
             Consulenza(navController, consultViewModel)
         }
 

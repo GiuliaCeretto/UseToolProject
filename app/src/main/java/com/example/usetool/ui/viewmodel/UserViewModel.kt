@@ -3,33 +3,37 @@ package com.example.usetool.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.usetool.data.dao.UserEntity
-import com.example.usetool.data.dto.UserDTO
+import com.example.usetool.data.repository.InventoryRepository
+import com.example.usetool.data.repository.OrderRepository
 import com.example.usetool.data.repository.UserRepository
+import com.example.usetool.data.service.Injection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-// Modifica in UserViewModel.kt
-class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
-    private val userId = "demo_user_id"
-
-    // RISOLTO: Usa direttamente la proprietà 'userProfile' definita nel Repository
+class UserViewModel(
+    private val userRepository: UserRepository = Injection.provideUserRepository(),
+    private val orderRepository: OrderRepository = Injection.provideOrderRepository(),
+    private val inventoryRepository: InventoryRepository = Injection.provideInventoryRepository()
+) : ViewModel() {
     val userProfile: StateFlow<UserEntity?> = userRepository.userProfile
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    init {
-        // Avvia la sincronizzazione da Firebase all'avvio
+    val purchases = orderRepository.localPurchases
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val rentals = orderRepository.localRentals
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun updateProfile(updatedUser: UserEntity) { // Accetta Entity!
         viewModelScope.launch {
-            userRepository.syncProfile(userId)
+            userRepository.updateProfile(userId, updatedUser)
         }
     }
 
-    fun updateProfile(updatedUser: UserDTO) {
+    fun performFullLogout() {
         viewModelScope.launch {
-            userRepository.updateProfile(userId, updatedUser)
+            orderRepository.clearOrderHistory()
+            inventoryRepository.clearCache()
         }
     }
 }

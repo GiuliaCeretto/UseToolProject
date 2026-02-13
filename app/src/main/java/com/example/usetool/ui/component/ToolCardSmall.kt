@@ -1,26 +1,29 @@
 package com.example.usetool.ui.component
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.usetool.model.Tool
+// Import aggiornato per puntare all'Entity di Room
+import com.example.usetool.data.dao.ToolEntity
 
+/**
+ * Versione aggiornata di ToolCardSmall che utilizza ToolEntity.
+ * La logica dei prezzi e dei dati è ora legata ai campi del DB locale.
+ */
 @Composable
 fun ToolCardSmall(
-    tool: Tool,
+    tool: ToolEntity, // Utilizza ToolEntity
     onClick: () -> Unit
 ) {
     Card(
@@ -30,7 +33,7 @@ fun ToolCardSmall(
             .padding(6.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors( containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -40,7 +43,7 @@ fun ToolCardSmall(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            // HEADER: TESTI + IMMAGINE
+            // HEADER: NOME + PREZZO + ICONA
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -49,24 +52,26 @@ fun ToolCardSmall(
                     modifier = Modifier.weight(1f)
                 ) {
 
+                    // Nome recuperato da ToolEntity
                     Text(
-                        text = tool.name ?: "",
+                        text = tool.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    Spacer(Modifier.height(4.dp)) // leggermente più piccolo
+                    Spacer(Modifier.height(4.dp))
+
+                    // Logica prezzo basata sul campo 'type' (acquisto vs noleggio)
+                    val priceLabel = if (tool.type == "noleggio") {
+                        "€ ${tool.price}/h"
+                    } else {
+                        "€ ${tool.price}"
+                    }
 
                     Text(
-                        text = when {
-                            tool.pricePerHour != null ->
-                                "€ ${tool.pricePerHour}/h"
-                            tool.purchasePrice != null ->
-                                "€ ${tool.purchasePrice}"
-                            else -> ""
-                        },
+                        text = priceLabel,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -74,59 +79,33 @@ fun ToolCardSmall(
 
                 Spacer(Modifier.width(12.dp))
 
-                Image(
-                    painter = painterResource(tool.imageRes),
+                // Placeholder Icon dato che ToolEntity non dispone di imageRes
+                Icon(
+                    imageVector = Icons.Default.Build,
                     contentDescription = tool.name,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(RoundedCornerShape(14.dp)),
-                    contentScale = ContentScale.Crop
+                    modifier = Modifier.size(60.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            // DATI TECNICI
-            if (tool.technicalData.isNotEmpty()) {
-                Spacer(Modifier.height(1.dp))
+            // DESCRIZIONE (Sostituisce technicalData non presente nell'Entity)
+            Column {
+                Text(
+                    text = "Descrizione",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    tool.technicalData.entries
-                        .take(3)
-                        .forEachIndexed { index, entry ->
+                Spacer(Modifier.height(2.dp))
 
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(
-                                    text = entry.key,
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp) // più piccolo
-                                )
-
-                                Spacer(Modifier.height(2.dp))
-
-                                Text(
-                                    text = entry.value,
-                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                            }
-
-                            if (index < minOf(2, tool.technicalData.size - 1)) {
-                                VerticalDivider(
-                                    modifier = Modifier
-                                        .height(28.dp) // leggermente più corto
-                                        .padding(horizontal = 4.dp)
-                                )
-                            }
-                        }
-                }
-            } else {
-                Spacer(Modifier.height(14.dp)) // mantiene altezza uniforme
+                Text(
+                    text = tool.description,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 14.sp
+                )
             }
         }
     }
 }
-

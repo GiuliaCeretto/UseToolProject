@@ -2,68 +2,51 @@ package com.example.usetool.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.usetool.data.dto.CartDTO
-import com.example.usetool.data.dto.SlotDTO
-import com.example.usetool.data.dto.ToolDTO
+import com.example.usetool.data.dao.SlotEntity
+import com.example.usetool.data.dao.ToolEntity
 import com.example.usetool.data.repository.CartRepository
 import com.example.usetool.data.repository.OrderRepository
+import com.example.usetool.data.service.Injection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalCoroutinesApi::class) // RISOLTO: Sì, l'Opt-in è necessario qui
+@OptIn(ExperimentalCoroutinesApi::class)
 class CartViewModel(
-    private val cartRepository: CartRepository,
-    private val orderRepository: OrderRepository
+    private val cartRepository: CartRepository = Injection.provideCartRepository(),
+    private val orderRepository: OrderRepository = Injection.provideOrderRepository()
 ) : ViewModel() {
 
     private val userId = "user_demo_123"
 
-    // Il flusso parte al primo ascolto e rimane attivo finché il ViewModel esiste
+    // Espone lo stato della testata (CartEntity) recuperata dal DAO
     val cartHeader = cartRepository.getActiveCart(userId)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.Lazily,
-            initialValue = null
-        )
+        .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
-    // Anche per gli elementi del carrello usiamo Lazily per coerenza
+    // Espone la lista degli elementi (CartItemEntity) recuperata dal DAO
     val cartItems = cartHeader.flatMapLatest { cart ->
         if (cart != null) cartRepository.getLocalCartItems(cart.id)
         else flowOf(emptyList())
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.Lazily,
-        initialValue = emptyList()
-    )
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    fun addToolToCart(tool: ToolDTO, slot: SlotDTO) {
+    // Riceve solo Entity
+    fun addToolToCart(tool: ToolEntity, slot: SlotEntity) {
         viewModelScope.launch {
-            try {
-                cartRepository.addItemToCart(userId, tool, slot)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            cartRepository.addItemToCart(userId, tool, slot)
         }
     }
 
-    fun removeItem(slotId: String, allTools: List<ToolDTO>) {
+    fun removeItem(slotId: String) {
         viewModelScope.launch {
-            try {
-                cartRepository.removeItemFromCart(userId, slotId, allTools)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            cartRepository.removeItemFromCart(userId, slotId)
         }
     }
 
-    fun performCheckout(currentCart: CartDTO, toolsList: List<ToolDTO>) {
+    fun performCheckout() {
+        val currentCart = cartHeader.value ?: return
         viewModelScope.launch {
-            try {
-                orderRepository.processCheckout(userId, currentCart, toolsList)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+            // Passa l'Entity al repository; il mapping in DTO avverrà lì dentro
+            orderRepository.processCheckout(userId, currentCart)
         }
     }
 }
