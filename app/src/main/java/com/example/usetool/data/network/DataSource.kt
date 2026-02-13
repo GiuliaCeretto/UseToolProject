@@ -6,7 +6,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
-class DataSource(private val dao: FirebaseDao) {
+//Prende i riferimenti dal FirebaseDao e li trasforma in Flow
+
+class DataSource(private val dao: FirebaseProvider) {
 
     //Funzione generica per osservare liste di dati su Firebase
     private fun <T> observeList(ref: DatabaseReference, clazz: Class<T>): Flow<List<T>> = callbackFlow {
@@ -46,10 +48,10 @@ class DataSource(private val dao: FirebaseDao) {
     // Dato riferito al singolo utente - privato
     fun observeUserCart(userId: String): Flow<CartDTO?> =
         observeSingle(dao.getCartsRef().child(userId), CartDTO::class.java)
-    fun observeUserPurchases(userId: String): Flow<List<PurchaseDTO>> =
+    fun observePurchases(userId: String): Flow<List<PurchaseDTO>> =
         observeList(dao.getPurchasesRef().child(userId), PurchaseDTO::class.java)
-    fun observeUserRentals(userId: String): Flow<List<RentalDTO>> =
+    fun observeRentals(userId: String): Flow<List<RentalDTO>> =
         observeList(dao.getRentalsRef().child(userId), RentalDTO::class.java)
-    fun observeUserProfile(userId: String): Flow<UserDTO?> =
+    fun observeProfile(userId: String): Flow<UserDTO?> =
         observeSingle(dao.getUsersRef().child(userId), UserDTO::class.java)
 }

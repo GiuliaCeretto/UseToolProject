@@ -11,6 +11,8 @@ composeBom = "2024.09.00"
 navigationCompose = "2.9.6"
 firebaseDatabase = "22.0.1"
 gson = "2.10.1"
+# Aggiunta versione di Room [cite: 111]
+room = "2.6.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -31,8 +33,14 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 firebase-database = { group = "com.google.firebase", name = "firebase-database", version.ref = "firebaseDatabase" }
 google-gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 
+# Aggiunta librerie Room [cite: 112, 113, 115]
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
+# Aggiunta plugin KAPT per Room
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }

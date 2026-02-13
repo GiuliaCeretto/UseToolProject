@@ -9,9 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.component.AppTopBar
-import com.example.usetool.component.BottomNavBar
-import com.example.usetool.component.CartItemCard
+import com.example.usetool.ui.component.AppTopBar
+import com.example.usetool.ui.component.BottomNavBar
+import com.example.usetool.ui.component.CartItemCard
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.viewmodel.CartViewModel
 

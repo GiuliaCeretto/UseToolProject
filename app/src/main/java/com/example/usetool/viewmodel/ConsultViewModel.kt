@@ -1,77 +1,54 @@
 package com.example.usetool.viewmodel
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import com.example.usetool.model.Expert
-import com.example.usetool.R
+import androidx.lifecycle.viewModelScope
+import com.example.usetool.data.dto.ExpertDTO
+import com.example.usetool.data.repository.ExpertRepository
+import kotlinx.coroutines.flow.*
 
-class ConsultViewModel : ViewModel() {
+class ConsultViewModel(
+    private val expertRepo: ExpertRepository
+) : ViewModel() {
 
-    // Lista di esperti
-    private val _experts = MutableStateFlow<List<Expert>>(
-        listOf(
-            Expert(
-                id = "e1",
-                name = "Mario Rossi",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Idraulico",
-                description = "Specializzato in impianti domestici e riparazioni rapide."
-            ),
-            Expert(
-                id = "e2",
-                name = "Luca Bianchi",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Elettricista",
-                description = "Esperto in impianti elettrici residenziali e industriali."
-            ),
-            Expert(
-                id = "e3",
-                name = "Giulia Verdi",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Falegname",
-                description = "Specializzata in mobili su misura e restauro legno."
-            ),
-            Expert(
-                id = "e4",
-                name = "Francesco Neri",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Carpentiere",
-                description = "Esperto in strutture in legno e carpenteria generale."
-            ),
-            Expert(
-                id = "e5",
-                name = "Sara Galli",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Pittore",
-                description = "Professionista in decorazioni e finiture di interni."
-            ),
-            Expert(
-                id = "e6",
-                name = "Alessandro Conti",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Muratore",
-                description = "Specializzato in lavori di muratura e ristrutturazioni."
-            ),
-            Expert(
-                id = "e7",
-                name = "Chiara Romano",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Giardiniere",
-                description = "Esperta in cura del verde e progettazione giardini."
-            ),
-            Expert(
-                id = "e8",
-                name = "Matteo De Luca",
-                imageRes = R.drawable.placeholder_profilo,
-                profession = "Tecnico informatico",
-                description = "Specializzato in assistenza hardware e software."
-            )
+    // Query di ricerca inserita dall'utente
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    // Stato per il caricamento (opzionale ma consigliato)
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    /**
+     * Trasformiamo il Flow degli esperti del Repository in una lista filtrata.
+     * Usiamo 'combine' per reagire sia ai cambi nel DB che ai cambi nella ricerca.
+     */
+    val experts: StateFlow<List<ExpertDTO>> = expertRepo.experts
+        .onEach { _isLoading.value = false } // Nascondi loader quando arrivano i dati
+        .combine(_searchQuery) { expertsList, query ->
+            if (query.isBlank()) {
+                expertsList // Mostra tutto se non c'è ricerca
+            } else {
+                expertsList.filter { expert ->
+                    // Filtra per nome, cognome o professione (case-insensitive)
+                    expert.firstName.contains(query, ignoreCase = true) ||
+                            expert.lastName.contains(query, ignoreCase = true) ||
+                            expert.profession.contains(query, ignoreCase = true)
+                }
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
-    )
 
-    val experts: StateFlow<List<Expert>> = _experts
+    // Funzione per aggiornare la query dalla UI (es. da una TextField)
+    fun onSearchQueryChanged(newQuery: String) {
+        _searchQuery.value = newQuery
+    }
 
-    // Funzione per trovare un esperto tramite ID
-    fun findExpertById(id: String): Expert? = _experts.value.find { it.id == id }
+
+    fun findExpertById(id: String): ExpertDTO? {
+        return experts.value.find { it.id == id }
+    }
 }

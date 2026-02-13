@@ -1,11 +1,21 @@
 package com.example.usetool.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import com.example.usetool.model.User
+import androidx.lifecycle.viewModelScope
+import com.example.usetool.data.dto.UserDTO
+import com.example.usetool.data.repository.UserRepository
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
-class UserViewModel : ViewModel() {
-    private val _user = MutableStateFlow(User("u1","Demo User", 50.0))
-    val user: StateFlow<User> = _user
+class UserViewModel(private val userRepository: UserRepository) : ViewModel() {
+    private val userId = "demo_user_id"
+
+    val userProfile: StateFlow<UserDTO?> = userRepository.getUserProfile(userId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun updateProfile(updatedUser: UserDTO) {
+        viewModelScope.launch {
+            userRepository.updateProfile(userId, updatedUser)
+        }
+    }
 }

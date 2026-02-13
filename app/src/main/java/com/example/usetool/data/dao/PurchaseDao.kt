@@ -1,0 +1,27 @@
+package com.example.usetool.data.dao
+
+import androidx.room.Dao
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
+
+@Entity(tableName = "purchases")
+data class PurchaseEntity(
+    @PrimaryKey val id: String,
+    val toolName: String,
+    val prezzoPagato: Double,
+    val dataAcquisto: Long,
+    val lockerId: String
+)
+
+@Dao
+interface PurchaseDao {
+    @Query("SELECT * FROM purchases ORDER BY dataAcquisto DESC")
+    fun getAll(): Flow<List<PurchaseEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(purchases: List<PurchaseEntity>)
+}

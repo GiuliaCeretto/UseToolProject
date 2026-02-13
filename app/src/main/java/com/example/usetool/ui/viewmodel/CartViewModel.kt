@@ -1,41 +1,63 @@
 package com.example.usetool.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.usetool.data.dto.CartDTO
 import com.example.usetool.data.dto.SlotDTO
 import com.example.usetool.data.dto.ToolDTO
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.example.usetool.data.repository.CartRepository
+import com.example.usetool.data.repository.OrderRepository
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import java.util.UUID
 
-// Oggetto carrello che usa i DTO
 data class CartItem(
     val id: String = UUID.randomUUID().toString(),
     val tool: ToolDTO,
     val slot: SlotDTO,
-    var durationHours: Int = 24 // Solo per noleggio
+    var durationHours: Int = 24
 ) {
     val subtotal: Double get() = if (tool.type == "noleggio") tool.price * durationHours else tool.price
 }
 
-class CartViewModel : ViewModel() {
-    private val _items = MutableStateFlow<List<CartItem>>(emptyList())
-    val items: StateFlow<List<CartItem>> = _items
+class CartViewModel(
+    private val cartRepository: CartRepository,
+    private val orderRepository: OrderRepository
+) : ViewModel() {
 
-    val total: Double get() = _items.value.sumOf { it.subtotal }
+    private val userId = "user_demo_123" // Da recuperare tramite Auth
+
+    // Osserva il carrello remoto convertendolo in CartItem per la UI
+    val items: StateFlow<List<CartItem>> = cartRepository.getUserCart(userId)
+        .map { dto ->
+            dto?.items?.values?.map { slot ->
+                // Nota: In un caso reale, qui servirebbe una lista di Tool per mappare i dettagli
+                CartItem(tool = ToolDTO(id = slot.toolId, name = "Tool ${slot.toolId}", price = 10.0, quantity = 1), slot = slot)
+            } ?: emptyList()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val total: Double get() = items.value.sumOf { it.subtotal }
 
     fun add(tool: ToolDTO, slot: SlotDTO) {
-        // Evita duplicati dello stesso cassetto
-        if (_items.value.none { it.slot.id == slot.id }) {
-            _items.value += CartItem(tool = tool, slot = slot)
+        viewModelScope.launch {
+            try {
+                cartRepository.addItemToCart(userId, tool, slot)
+            } catch (e: Exception) {
+                // Gestire errore (es. slot occupato)
+            }
         }
     }
 
-    fun remove(itemId: String) {
-        _items.value = _items.value.filterNot { it.id == itemId }
+    fun remove(slotId: String, allTools: List<ToolDTO>) {
+        viewModelScope.launch {
+            cartRepository.removeItemFromCart(userId, slotId, allTools)
+        }
     }
 
-    fun checkout() {
-        // Qui implementerai la generazione di Noleggio/Acquisto su Firebase
-        _items.value = emptyList()
+    fun checkout(currentCart: CartDTO, toolsList: List<ToolDTO>) {
+        viewModelScope.launch {
+            orderRepository.processCheckout(userId, currentCart, toolsList)
+        }
     }
 }
