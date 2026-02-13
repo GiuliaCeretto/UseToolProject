@@ -1,6 +1,7 @@
-package com.example.usetool.ui.screens.tool
+package com.example.usetool.screens.tool
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,10 +18,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
-import com.example.usetool.component.AppTopBar
-import com.example.usetool.component.BottomNavBar
-import com.example.usetool.ui.viewmodel.CartViewModel
-import com.example.usetool.ui.viewmodel.UseToolViewModel
+import com.example.usetool.component.*
+import com.example.usetool.viewmodel.CartViewModel
+import com.example.usetool.viewmodel.UseToolViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

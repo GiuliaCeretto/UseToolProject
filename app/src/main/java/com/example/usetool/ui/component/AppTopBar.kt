@@ -21,7 +21,7 @@ fun AppTopBar(navController: NavController) {
             Image(
                 painter = painterResource(id = R.drawable.usetoollogo),
                 contentDescription = "Logo UseTool",
-                modifier = Modifier.size(width = 120.dp, height = 40.dp)
+                modifier = Modifier.size(width = 160.dp, height = 55.dp)
             )
         },
         navigationIcon = {
@@ -33,6 +33,10 @@ fun AppTopBar(navController: NavController) {
             IconButton(onClick = { navController.navigate(NavRoutes.Carrello.route) }) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = "Carrello")
             }
-        }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
     )
 }
+

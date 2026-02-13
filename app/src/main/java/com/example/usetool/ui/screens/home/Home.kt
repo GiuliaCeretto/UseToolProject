@@ -18,15 +18,17 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.component.AppTopBar
-import com.example.usetool.component.BottomNavBar
-import com.example.usetool.component.ToolCardSmall
-import com.example.usetool.component.LockerCardSmall
-import com.example.usetool.navigation.NavRoutes
-import com.example.usetool.ui.viewmodel.CartViewModel
-import com.example.usetool.ui.viewmodel.UseToolViewModel
+import com.example.usetool.component.*
+import com.example.usetool.navigation.*
+import com.example.usetool.viewmodel.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import com.example.usetool.ui.theme.BluePrimary
+import com.example.usetool.ui.theme.YellowLight
+import com.example.usetool.ui.theme.YellowMedium
+import com.example.usetool.ui.theme.YellowPrimary
 
 
 @Composable
@@ -40,56 +42,35 @@ fun HomeScreen(
 
     var selectedTab by remember { mutableStateOf(0) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-
-        // SALUTO
-        Text(
-            text = "Ciao, Mario 👋",
-            style = MaterialTheme.typography.titleLarge
-        )
-
-        Spacer(Modifier.height(20.dp))
-
-        // I TUOI NOLEGGI
-        Text("I tuoi noleggi", style = MaterialTheme.typography.titleMedium)
-
-        LazyRow {
-            items(tools.filter { !it.available }) { tool ->
-                ToolCardSmall(
-                    tool = tool,
-                    onClick = {
-                        navController.navigate(
-                            NavRoutes.SchedaStrumento.createRoute(tool.id)
-                        )
-                    }
-                )
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        // SWITCHER
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
-            HomeSwitcher(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+
+            // SALUTO
+            Text(
+                text = "Ciao, Mario 👋",
+                style = MaterialTheme.typography.titleLarge
             )
-        }
 
-        Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
-        // CONTENUTO SWITCHER
-        if (selectedTab == 0) {
+            // I TUOI NOLEGGI
+            Text(
+                text = "I tuoi noleggi",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 20.sp
+                )
+            )
+
             LazyRow {
-                items(tools.take(5)) { tool ->
+                items(tools.filter { !it.available }) { tool ->
                     ToolCardSmall(
                         tool = tool,
                         onClick = {
@@ -100,70 +81,109 @@ fun HomeScreen(
                     )
                 }
             }
-        } else {
-            LazyRow {
-                items(lockers.sortedBy { it.distanceKm }.take(5)) { locker ->
-                    LockerCardSmall(
-                        locker = locker,
-                        onClick = {
-                            navController.navigate(
-                                NavRoutes.SchedaDistributore.createRoute(locker.id)
-                            )
-                        }
-                    )
+
+            Spacer(Modifier.height(24.dp))
+
+            // SWITCHER
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                HomeSwitcher(
+                    selectedTab = selectedTab,
+                    onTabSelected = { selectedTab = it }
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // CONTENUTO SWITCHER
+            if (selectedTab == 0) {
+                LazyRow {
+                    items(tools.take(5)) { tool ->
+                        ToolCardSmall(
+                            tool = tool,
+                            onClick = {
+                                navController.navigate(
+                                    NavRoutes.SchedaStrumento.createRoute(tool.id)
+                                )
+                            }
+                        )
+                    }
+                }
+            } else {
+                LazyRow {
+                    items(lockers.sortedBy { it.distanceKm }.take(5)) { locker ->
+                        LockerCardSmall(
+                            locker = locker,
+                            onClick = {
+                                navController.navigate(
+                                    NavRoutes.SchedaDistributore.createRoute(locker.id)
+                                )
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(24.dp))
 
-        // MAPPA
-        Text("Trova sulla mappa", style = MaterialTheme.typography.titleMedium)
-
-        Spacer(Modifier.height(8.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp)
-        ) {
-            Image(
-                painter = painterResource(R.drawable.placeholder_map),
-                contentDescription = "Mappa",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+            // MAPPA
+            Text(
+                text = "Trova sulla mappa",
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp)
             )
 
-            lockers.forEachIndexed { index, locker ->
-                Column(
-                    modifier = Modifier
-                        .offset(
-                            x = (40 + index * 90).dp,
-                            y = (60 + index * 30).dp
-                        )
-                        .clickable {
-                            navController.navigate(
-                                NavRoutes.SchedaDistributore.createRoute(locker.id)
-                            )
-                        },
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = locker.name,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(30.dp)
+            Spacer(Modifier.height(8.dp))
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+
+                    Image(
+                        painter = painterResource(R.drawable.placeholder_map),
+                        contentDescription = "Mappa",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
 
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                    ) {
-                        Text(
-                            locker.name,
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                    lockers.forEachIndexed { index, locker ->
+                        Column(
+                            modifier = Modifier
+                                .offset(
+                                    x = (40 + index * 90).dp,
+                                    y = (60 + index * 30).dp
+                                )
+                                .clickable {
+                                    navController.navigate(
+                                        NavRoutes.SchedaDistributore.createRoute(locker.id)
+                                    )
+                                },
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = locker.name,
+                                tint = BluePrimary,
+                                modifier = Modifier.size(30.dp)
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+                            ) {
+                                Text(
+                                    locker.name,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -179,18 +199,22 @@ fun HomeSwitcher(
     Surface(
         shape = RoundedCornerShape(50),
         tonalElevation = 4.dp,
-        color = MaterialTheme.colorScheme.surfaceVariant
+        color = YellowMedium
     ) {
         Row(
             modifier = Modifier.padding(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SwitcherItem("Popolari", selectedTab == 0) {
-                onTabSelected(0)
-            }
-            SwitcherItem("Vicini a te", selectedTab == 1) {
-                onTabSelected(1)
-            }
+            SwitcherItem(
+                text = "Popolari",
+                selected = selectedTab == 0,
+                onClick = { onTabSelected(0) }
+            )
+            SwitcherItem(
+                text = "Vicini a te",
+                selected = selectedTab == 1,
+                onClick = { onTabSelected(1) }
+            )
         }
     }
 }
@@ -203,21 +227,18 @@ private fun SwitcherItem(
 ) {
     Surface(
         shape = RoundedCornerShape(50),
-        color = if (selected)
-            MaterialTheme.colorScheme.primary
-        else
-            Color.Transparent,
+        color = if (selected) YellowPrimary else Color.Transparent,
         modifier = Modifier.clickable { onClick() }
     ) {
         Text(
             text = text,
-            color = if (selected)
-                MaterialTheme.colorScheme.onPrimary
-            else
-                MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+            color = if (selected) Color.Black else Color.DarkGray,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontSize = 14.sp,
+            ),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
+
     }
 }
 

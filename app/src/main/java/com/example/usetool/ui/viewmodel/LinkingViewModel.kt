@@ -9,7 +9,6 @@ class LinkingViewModel : ViewModel() {
     val isLinked: StateFlow<Boolean> = _isLinked
 
     fun link() {
-        // simulate pairing
         _isLinked.value = true
     }
 

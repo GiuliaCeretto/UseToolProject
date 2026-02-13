@@ -1,4 +1,4 @@
-package com.example.usetool.ui.screens.cart
+package com.example.usetool.screens.cart
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,11 +9,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.ui.component.AppTopBar
-import com.example.usetool.ui.component.BottomNavBar
-import com.example.usetool.ui.component.CartItemCard
-import com.example.usetool.navigation.NavRoutes
-import com.example.usetool.ui.viewmodel.CartViewModel
+import com.example.usetool.component.*
+import com.example.usetool.navigation.*
+import com.example.usetool.viewmodel.CartViewModel
 
 @Composable
 fun CarrelloScreen(
