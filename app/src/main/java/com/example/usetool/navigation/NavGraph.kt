@@ -18,7 +18,7 @@ fun AppNavGraph(
     searchViewModel: SearchViewModel,
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
-    expertViewModel: ExpertViewModel,
+    expertViewModel: ExpertViewModel, // Fondamentale per Consulenza e Dettaglio
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -27,66 +27,38 @@ fun AppNavGraph(
         modifier = modifier
     ) {
 
-        // --- SCHERMATE PRINCIPALI (BOTTOM BAR) ---
-
         composable(NavRoutes.Home.route) {
-            // CORRETTO: HomeScreen richiede UseToolViewModel e UserViewModel per i noleggi attivi
-            HomeScreen(
-                navController = navController,
-                vm = useToolViewModel,
-                userVm = userViewModel
-            )
+            HomeScreen(navController, useToolViewModel, userViewModel)
         }
 
         composable(NavRoutes.Search.route) {
-            // CORRETTO: SearchScreen deve utilizzare il SearchViewModel dedicato
-            SearchScreen(
-                navController = navController,
-                searchVm = searchViewModel,
-                useToolVm = useToolViewModel
-            )
+            SearchScreen(navController, searchViewModel, useToolViewModel)
         }
 
         composable(NavRoutes.Collegamento.route) {
-            CollegamentoScreen(navController = navController)
+            CollegamentoScreen(navController)
         }
 
         composable(NavRoutes.Consulenza.route) {
-            // CORRETTO: Consulenza utilizza l'ExpertViewModel per la lista esperti
-            Consulenza(
-                navController = navController,
-                expertViewModel = expertViewModel
-            )
+            Consulenza(navController, expertViewModel)
         }
 
         composable(NavRoutes.Profilo.route) {
-            // CORRETTO: ProfiloScreen utilizza UseToolViewModel (come definito nel file Profilo.kt)
-            ProfiloScreen(
-                navController = navController,
-                viewModel = useToolViewModel
-            )
+            ProfiloScreen(navController, userViewModel)
         }
 
         composable(NavRoutes.Carrello.route) {
-            CarrelloScreen(
-                navController = navController,
-                cartViewModel = cartViewModel
-            )
+            CarrelloScreen(navController, cartViewModel)
         }
 
-        // --- SCHERMATE DI DETTAGLIO E FLUSSI ---
+        // --- SCHERMATE DI DETTAGLIO ---
 
         composable(
             route = NavRoutes.SchedaConsulente.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            // CORRETTO: Passato ExpertViewModel per recuperare i dettagli dell'esperto tramite ID
-            SchedaConsulenteScreen(
-                navController = navController,
-                expertId = id,
-                expertViewModel = expertViewModel
-            )
+            SchedaConsulenteScreen(navController, id, expertViewModel)
         }
 
         composable(
@@ -94,12 +66,7 @@ fun AppNavGraph(
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaStrumentoScreen(
-                navController = navController,
-                id = id,
-                viewModel = useToolViewModel,
-                cartVM = cartViewModel
-            )
+            SchedaStrumentoScreen(navController, id, useToolViewModel, cartViewModel)
         }
 
         composable(
@@ -107,26 +74,15 @@ fun AppNavGraph(
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaDistributoreScreen(
-                navController = navController,
-                id = id,
-                viewModel = useToolViewModel,
-                cartVM = cartViewModel
-            )
+            SchedaDistributoreScreen(navController, id, useToolViewModel, cartViewModel)
         }
 
         composable(NavRoutes.Pagamento.route) {
-            PagamentoScreen(
-                navController = navController,
-                cartViewModel = cartViewModel
-            )
+            PagamentoScreen(navController, cartViewModel)
         }
 
         composable(NavRoutes.Login.route) {
-            LoginScreen(
-                navController = navController,
-                userViewModel = userViewModel
-            )
+            LoginScreen(navController, userViewModel)
         }
     }
 }
