@@ -20,11 +20,14 @@ interface ToolDao {
     suspend fun clearAll()
 }
 
-@Entity(tableName = "tools") // Specifica il nome della tabella [cite: 144]
+@Entity(tableName = "tools")
 data class ToolEntity(
-    @PrimaryKey val id: String, // Ogni entità deve definire una Primary Key [cite: 177]
+    @PrimaryKey val id: String,
     val name: String,
     val description: String,
     val price: Double,
-    val type: String
+    val type: String,
+    val category: String,         // Aggiunto
+    val imageResName: String,     // Aggiunto
+    val quantity: Int             // Aggiunto
 )

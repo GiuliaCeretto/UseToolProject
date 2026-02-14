@@ -1,7 +1,6 @@
 package com.example.usetool
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -18,20 +17,22 @@ import com.example.usetool.ui.viewmodel.*
 
 class MainActivity : ComponentActivity() {
 
-    // ViewModel inizializzati correttamente tramite 'by viewModels()'
+    // Usiamo 'lazy' o inizializziamo dopo init per sicurezza,
+    // ma la soluzione più pulita è chiamare init IMMEDIATAMENTE.
+
     private val useToolVM: UseToolViewModel by viewModels()
     private val searchVM: SearchViewModel by viewModels()
     private val cartVM: CartViewModel by viewModels()
     private val userVM: UserViewModel by viewModels()
-
     private val expertVM: ExpertViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Inizializza Injection (contesto per DB locale)
-        Injection.init(applicationContext)
+        // 1. PRIMA DI TUTTO: Inizializza Injection.
+        // Deve essere la primissima riga per evitare crash nei ViewModel
+        Injection.init(this)
 
-        // 2. Logica per il caricamento dati Firebase
+        // 2. Logica Firebase
         checkFirstRunAndInit()
 
         super.onCreate(savedInstanceState)
@@ -41,8 +42,6 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
 
                 MainScaffold(navController) { padding ->
-                    // CORREZIONE 2: Allineamento parametri con AppNavGraph.kt
-                    // Rimosso 'linkingViewModel' e aggiunto 'expertViewModel'
                     AppNavGraph(
                         navController = navController,
                         useToolViewModel = useToolVM,
@@ -62,16 +61,9 @@ class MainActivity : ComponentActivity() {
         val isFirstRun = prefs.getBoolean("is_first_run", true)
 
         if (isFirstRun) {
-            // CORREZIONE 3: Se runFullSetup accetta solo il Context,
-            // gestiamo il flag delle preferenze subito dopo o verifichiamo la firma del metodo.
-            try {
-                DatabaseInitializer.runFullSetup(this)
-                // Se il metodo non supporta una callback (lambda), settiamo il flag qui
-                prefs.edit().putBoolean("is_first_run", false).apply()
-                Log.d("APP_START", "Configurazione iniziale avviata")
-            } catch (e: Exception) {
-                Log.e("APP_START", "Errore durante l'inizializzazione: ${e.message}")
-            }
+            DatabaseInitializer.runFullSetup(this)
+            // Segnamo come fatto solo se non ci sono crash
+            prefs.edit().putBoolean("is_first_run", false).apply()
         }
     }
 }

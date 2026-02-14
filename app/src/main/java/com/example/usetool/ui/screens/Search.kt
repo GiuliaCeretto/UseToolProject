@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.R
 import com.example.usetool.navigation.NavRoutes
@@ -36,18 +37,18 @@ fun SearchScreen(
     searchVm: SearchViewModel,
     useToolVm: UseToolViewModel
 ) {
-    val query by searchVm.query.collectAsState()
-    val filteredTools by searchVm.filteredTools.collectAsState()
-    val maxDistance by searchVm.maxDistance.collectAsState()
-    val selectedTypes by searchVm.selectedTypes.collectAsState()
+    // CORREZIONE: Uso di collectAsStateWithLifecycle per efficienza e risparmio dati
+    val query by searchVm.query.collectAsStateWithLifecycle()
+    val filteredTools by searchVm.filteredTools.collectAsStateWithLifecycle()
+    val maxDistance by searchVm.maxDistance.collectAsStateWithLifecycle()
+    val selectedTypes by searchVm.selectedTypes.collectAsStateWithLifecycle()
 
-    val tools by useToolVm.topTools.collectAsState()
-    val lockers by useToolVm.lockers.collectAsState()
+    val tools by useToolVm.topTools.collectAsStateWithLifecycle()
+    val lockers by useToolVm.lockers.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    // Gestione errori reattiva
     LaunchedEffect(useToolVm.errorMessage) {
         useToolVm.errorMessage.collectLatest { message ->
             snackbarHostState.showSnackbar(message)
@@ -61,10 +62,9 @@ fun SearchScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // 🔍 SEARCH BAR
+            // 🔍 SEARCH BAR FISSA IN ALTO
             OutlinedTextField(
                 value = query,
                 onValueChange = { searchVm.setQuery(it) },
@@ -75,116 +75,124 @@ fun SearchScreen(
                 singleLine = true
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
             HomeSwitcher(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it }
             )
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
             if (selectedTab == 0) {
                 // --- VISTA LISTA ---
-                Surface(
-                    color = BlueLight,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            "Distanza massima: ${maxDistance.roundToInt()} km",
-                            style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp)
-                        )
-                        Slider(
-                            value = maxDistance,
-                            onValueChange = { searchVm.setMaxDistance(it) },
-                            valueRange = 1f..20f,
-                            colors = SliderDefaults.colors(
-                                thumbColor = BluePrimary,
-                                activeTrackColor = BluePrimary
+                // CORREZIONE: Rimosso verticalScroll esterno per usare le capacità native di LazyVerticalGrid
+                Column {
+                    Surface(
+                        color = BlueLight,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Distanza massima: ${maxDistance.roundToInt()} km",
+                                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp)
                             )
-                        )
+                            Slider(
+                                value = maxDistance,
+                                onValueChange = { searchVm.setMaxDistance(it) },
+                                valueRange = 1f..20f,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = BluePrimary,
+                                    activeTrackColor = BluePrimary
+                                )
+                            )
+                        }
                     }
-                }
 
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(16.dp))
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    modifier = Modifier
-                        .height(520.dp)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filteredTools) { tool ->
-                        ToolCardMini(
-                            tool = tool,
-                            distanceKm = useToolVm.getDistanceForTool(tool.id)?.toFloat(),
-                            onClick = {
-                                navController.navigate(NavRoutes.SchedaStrumento.createRoute(tool.id))
-                            }
-                        )
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(filteredTools) { tool ->
+                            ToolCardMini(
+                                tool = tool,
+                                // Uso della funzione del ViewModel per la distanza
+                                distanceKm = useToolVm.getDistanceForTool(tool.id)?.toFloat(),
+                                onClick = {
+                                    navController.navigate(NavRoutes.SchedaStrumento.createRoute(tool.id))
+                                }
+                            )
+                        }
                     }
                 }
             } else {
                 // --- VISTA MAPPA ---
-                val allToolsDistinct = tools.distinctBy { it.name }
-                val columns = allToolsDistinct.chunked(3)
-                val listState = rememberLazyListState()
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    val allToolsDistinct = tools.distinctBy { it.name }
+                    val columns = allToolsDistinct.chunked(3)
+                    val listState = rememberLazyListState()
 
-                Surface(
-                    color = YellowMedium,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(modifier = Modifier.padding(8.dp)) {
-                        Text("Filtra per tipo", style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp))
-                        Spacer(Modifier.height(12.dp))
+                    Surface(
+                        color = YellowMedium,
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("Filtra per tipo", style = MaterialTheme.typography.titleMedium)
+                            Spacer(Modifier.height(12.dp))
 
-                        LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(columns) { columnTools ->
-                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    columnTools.forEach { tool ->
-                                        ToolFilterChip(
-                                            text = tool.name,
-                                            selected = selectedTypes[tool.id] == true,
-                                            onClick = { searchVm.toggleType(tool.id) }
-                                        )
+                            LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                items(columns) { columnTools ->
+                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        columnTools.forEach { tool ->
+                                            ToolFilterChip(
+                                                text = tool.name,
+                                                selected = selectedTypes[tool.id] == true,
+                                                onClick = { searchVm.toggleType(tool.id) }
+                                            )
+                                        }
                                     }
                                 }
                             }
+                            Spacer(Modifier.height(8.dp))
+                            DotsIndicator(totalDots = columns.size, visibleDot = listState.firstVisibleItemIndex)
                         }
-                        DotsIndicator(totalDots = columns.size, visibleDot = listState.firstVisibleItemIndex)
                     }
-                }
 
-                Spacer(Modifier.height(20.dp))
+                    Spacer(Modifier.height(20.dp))
 
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier.fillMaxWidth().height(260.dp)
-                ) {
-                    Box {
-                        Image(
-                            painter = painterResource(R.drawable.placeholder_map),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-
-                        lockers.forEachIndexed { index, locker ->
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = locker.name,
-                                tint = BluePrimary,
-                                modifier = Modifier
-                                    .offset(x = (40 + index * 30).dp, y = (60 + index * 10).dp)
-                                    .clickable {
-                                        navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
-                                    }
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp)
+                    ) {
+                        Box {
+                            Image(
+                                painter = painterResource(R.drawable.placeholder_map),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
                             )
+
+                            lockers.forEachIndexed { index, locker ->
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = locker.name,
+                                    tint = BluePrimary,
+                                    modifier = Modifier
+                                        .offset(x = (40 + index * 30).dp, y = (60 + index * 10).dp)
+                                        .clickable {
+                                            navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
+                                        }
+                                )
+                            }
                         }
                     }
                 }

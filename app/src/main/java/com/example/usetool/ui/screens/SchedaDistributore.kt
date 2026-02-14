@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.R
 import com.example.usetool.data.dao.LockerEntity
@@ -37,20 +38,18 @@ fun SchedaDistributoreScreen(
     viewModel: UseToolViewModel,
     cartVM: CartViewModel
 ) {
-    // 1. Recupero Locker e Dati dal VM (Reattivo)
-    val lockers by viewModel.lockers.collectAsState()
+    // CORREZIONE: Uso di collectAsStateWithLifecycle
+    val lockers by viewModel.lockers.collectAsStateWithLifecycle()
     val locker = lockers.find { it.id == id }
 
-    val allTools by viewModel.topTools.collectAsState()
-    val allSlots by viewModel.slots.collectAsState()
+    val allTools by viewModel.topTools.collectAsStateWithLifecycle()
+    val allSlots by viewModel.slots.collectAsStateWithLifecycle()
 
-    // Filtriamo gli slot di questo locker e i relativi attrezzi
     val lockerSlots = allSlots.filter { it.lockerId == id }
     val toolsInLocker = allTools.filter { tool ->
         lockerSlots.any { it.toolId == tool.id }
     }
 
-    // Stato per la selezione (ID attrezzo -> Booleano)
     val selected = remember { mutableStateMapOf<String, Boolean>() }
 
     val sheetState = rememberBottomSheetScaffoldState(
@@ -114,7 +113,6 @@ fun SchedaDistributoreScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                // AZIONE FINALE: Aggiunta al carrello
                 val selectedToolIds = selected.filter { it.value }.keys
 
                 Row(
@@ -122,8 +120,10 @@ fun SchedaDistributoreScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // CORREZIONE: Uso della funzione del VM per la distanza reale
+                    val distance = viewModel.getDistanceToLocker(locker)
                     Text(
-                        text = "Vicinanza: OK", // LockerEntity non ha distanza, usiamo un placeholder
+                        text = "Vicinanza: ${"%.1f".format(distance)} km",
                         style = MaterialTheme.typography.titleLarge,
                         color = Color(0xFFFFD600)
                     )
@@ -142,7 +142,7 @@ fun SchedaDistributoreScreen(
                             navController.navigate(NavRoutes.Carrello.route)
                         }
                     ) {
-                        Text("Aggiungi al carrello (${selectedToolIds.size})")
+                        Text("Carrello (${selectedToolIds.size})")
                     }
                 }
             }
@@ -156,7 +156,6 @@ fun SchedaDistributoreScreen(
                 contentScale = ContentScale.Crop
             )
 
-            // Bottone Indietro (Fix 'ic_back')
             IconButton(
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.padding(16.dp).background(Color.White, RoundedCornerShape(50))
@@ -170,11 +169,7 @@ fun SchedaDistributoreScreen(
 }
 
 @Composable
-private fun DistributorToolRow(
-    tool: ToolEntity,
-    available: Boolean,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+private fun DistributorToolRow(tool: ToolEntity, available: Boolean, checked: Boolean, onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),

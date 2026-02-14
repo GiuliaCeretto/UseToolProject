@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.ui.component.*
 import com.example.usetool.ui.theme.Green2
@@ -25,37 +26,38 @@ fun Consulenza(
     navController: NavController,
     expertViewModel: ExpertViewModel
 ) {
-    // Osserva la lista degli esperti dal database locale (ExpertEntity)
-    val experts by expertViewModel.experts.collectAsState()
+    // CORREZIONE: Uso di collectAsStateWithLifecycle per ottimizzare il consumo di risorse
+    val experts by expertViewModel.experts.collectAsStateWithLifecycle()
 
-    // Stato per la gestione degli snackbar (errori)
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Raccoglie i messaggi di errore dal ViewModel e li mostra nella UI
     LaunchedEffect(expertViewModel.errorMessage) {
         expertViewModel.errorMessage.collectLatest { message ->
             snackbarHostState.showSnackbar(message)
         }
     }
 
-    // Stato locale per ricerca e filtri
     var searchQuery by remember { mutableStateOf("") }
     var selectedProfession by remember { mutableStateOf<String?>(null) }
 
-    // Logica di filtraggio basata sulle Entity del database
-    val filteredExperts = experts.filter { expert ->
-        val matchesSearch = searchQuery.isEmpty() ||
-                "${expert.firstName} ${expert.lastName}".contains(searchQuery, ignoreCase = true)
-        val matchesProfession = selectedProfession == null || expert.profession == selectedProfession
-
-        matchesSearch && matchesProfession
+    // OTTIMIZZAZIONE: Uso di derivedStateOf per evitare ricalcoli inutili della lista filtrata
+    val filteredExperts by remember(searchQuery, selectedProfession, experts) {
+        derivedStateOf {
+            experts.filter { expert ->
+                val matchesSearch = searchQuery.isEmpty() ||
+                        "${expert.firstName} ${expert.lastName}".contains(searchQuery, ignoreCase = true)
+                val matchesProfession = selectedProfession == null || expert.profession == selectedProfession
+                matchesSearch && matchesProfession
+            }
+        }
     }
 
-    // Estrae le professioni uniche per i Chip
-    val professions = experts.map { it.profession }.distinct()
+    val professions = remember(experts) {
+        experts.map { it.profession }.distinct()
+    }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }, // Host per i messaggi di errore
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = { AppTopBar(navController) },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
@@ -72,7 +74,6 @@ fun Consulenza(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // BARRA DI RICERCA STILIZZATA
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -89,7 +90,6 @@ fun Consulenza(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // CAROSELLO PROFESSIONI (FILTRI)
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -118,7 +118,6 @@ fun Consulenza(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // GRIGLIA ESPERTI
             if (experts.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Green2)

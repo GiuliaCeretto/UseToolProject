@@ -2,6 +2,7 @@ package com.example.usetool.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.usetool.data.dao.LockerEntity
 import com.example.usetool.data.dao.SlotEntity
 import com.example.usetool.data.repository.InventoryRepository
 import com.example.usetool.data.service.Injection
@@ -55,6 +56,10 @@ class UseToolViewModel(
         return currentLockers
             .filter { availableLockerIds.contains(it.id) }
             .minOfOrNull { calculateDistance(userLat, userLon, it.lat, it.lon) }
+    }
+
+    fun getDistanceToLocker(locker: LockerEntity): Double {
+        return calculateDistance(userLat, userLon, locker.lat, locker.lon)
     }
 
     private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {

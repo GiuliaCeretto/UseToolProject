@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.ui.component.CartItemCard
 import com.example.usetool.ui.theme.BluePrimary
@@ -21,19 +22,21 @@ fun CarrelloScreen(
     navController: NavController,
     cartViewModel: CartViewModel
 ) {
-    val cartHeader by cartViewModel.cartHeader.collectAsState()
-    val items by cartViewModel.cartItems.collectAsState()
+    // CORREZIONE: Uso di collectAsStateWithLifecycle per efficienza energetica e dati
+    val cartHeader by cartViewModel.cartHeader.collectAsStateWithLifecycle()
+    val items by cartViewModel.cartItems.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Raccoglie errori (es. checkout fallito o carrello vuoto)
+    // Raccoglie errori e messaggi di sistema
     LaunchedEffect(cartViewModel.errorMessage) {
         cartViewModel.errorMessage.collectLatest { message ->
             snackbarHostState.showSnackbar(message)
         }
     }
 
+    // Filtro locale degli articoli basato sulla ricerca
     val filteredItems = items.filter { it.toolName.contains(searchQuery, ignoreCase = true) }
 
     Scaffold(
@@ -66,7 +69,12 @@ fun CarrelloScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (items.isEmpty()) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text("Il carrello è vuoto", color = MaterialTheme.colorScheme.secondary)
                 }
             } else {
@@ -77,18 +85,21 @@ fun CarrelloScreen(
                     items(filteredItems) { item ->
                         CartItemCard(
                             item = item,
-                            onIncrease = { },
-                            onDecrease = { },
+                            onIncrease = { /* Gestione quantità se prevista dal DTO */ },
+                            onDecrease = { /* Gestione quantità se prevista dal DTO */ },
                             onRemove = { cartViewModel.removeItem(item.slotId) }
                         )
                     }
                 }
             }
 
+            // Calcolo totale basato sulla testata del carrello sincronizzata
             val totale = cartHeader?.totaleProvvisorio ?: 0.0
 
             Card(
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
                 elevation = CardDefaults.cardElevation(4.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -106,8 +117,14 @@ fun CarrelloScreen(
                     }
 
                     Button(
-                        onClick = { cartViewModel.performCheckout() },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        onClick = {
+                            cartViewModel.performCheckout()
+                            // Suggerimento: Aggiungere qui la navigazione dopo il successo del checkout
+                        },
+                        enabled = items.isNotEmpty(), // Disabilita se il carrello è vuoto
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
                     ) {
                         Text("Paga Ora")
