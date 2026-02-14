@@ -1,4 +1,4 @@
-package com.example.usetool.ui.screens.profile
+package com.example.usetool.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -6,18 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.component.BottomNavBar
-import com.example.usetool.component.AppTopBar
-import com.example.usetool.ui.viewmodel.UseToolViewModel
+import com.example.usetool.ui.component.BottomNavBar
+import com.example.usetool.ui.component.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfiloScreen(
     navController: NavController,
-    viewModel: UseToolViewModel
 ) {
     Scaffold(
-        topBar = { AppTopBar(navController, "UseTool") },
+        topBar = { AppTopBar(navController) },
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         Column(Modifier.padding(padding).padding(16.dp)) {

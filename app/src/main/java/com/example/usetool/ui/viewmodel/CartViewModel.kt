@@ -19,34 +19,45 @@ class CartViewModel(
 
     private val userId = "user_demo_123"
 
-    // Espone lo stato della testata (CartEntity) recuperata dal DAO
+    private val _errorMessage = MutableSharedFlow<String>()
+    val errorMessage = _errorMessage.asSharedFlow()
+
     val cartHeader = cartRepository.getActiveCart(userId)
         .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
-    // Espone la lista degli elementi (CartItemEntity) recuperata dal DAO
     val cartItems = cartHeader.flatMapLatest { cart ->
         if (cart != null) cartRepository.getLocalCartItems(cart.id)
         else flowOf(emptyList())
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    // Riceve solo Entity
     fun addToolToCart(tool: ToolEntity, slot: SlotEntity) {
         viewModelScope.launch {
-            cartRepository.addItemToCart(userId, tool, slot)
+            try {
+                cartRepository.addItemToCart(userId, tool, slot)
+            } catch (_: Exception) {
+                _errorMessage.emit("Impossibile aggiungere al carrello")
+            }
         }
     }
 
     fun removeItem(slotId: String) {
         viewModelScope.launch {
-            cartRepository.removeItemFromCart(userId, slotId)
+            try {
+                cartRepository.removeItemFromCart(userId, slotId)
+            } catch (_: Exception) {
+                _errorMessage.emit("Errore durante la rimozione dell'articolo")
+            }
         }
     }
 
     fun performCheckout() {
         val currentCart = cartHeader.value ?: return
         viewModelScope.launch {
-            // Passa l'Entity al repository; il mapping in DTO avverrà lì dentro
-            orderRepository.processCheckout(userId, currentCart)
+            try {
+                orderRepository.processCheckout(userId, currentCart)
+            } catch (_: Exception) {
+                _errorMessage.emit("Checkout fallito. Riprova più tardi.")
+            }
         }
     }
 }

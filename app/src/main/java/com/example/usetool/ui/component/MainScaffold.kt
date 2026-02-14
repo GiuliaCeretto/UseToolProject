@@ -1,21 +1,24 @@
 package com.example.usetool.ui.component
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue // NECESSARIO per 'by'
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState // IMPORT MANCANTE
+import com.example.usetool.navigation.NavRoutes // Assicurati che il package sia corretto
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
     navController: NavHostController,
     content: @Composable (PaddingValues) -> Unit
 ) {
+    // Osserva il backstack per sapere dove si trova l'utente
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val showBottomBar = currentRoute in listOf(
+    // Definiamo le rotte principali che richiedono la BottomBar
+    val mainRoutes = listOf(
         NavRoutes.Home.route,
         NavRoutes.Search.route,
         NavRoutes.Collegamento.route,
@@ -24,6 +27,8 @@ fun MainScaffold(
         NavRoutes.Carrello.route
     )
 
+    // Logica di visibilità UI
+    val showBottomBar = currentRoute in mainRoutes
     val showTopBar = currentRoute != NavRoutes.Login.route
 
     Scaffold(
@@ -34,12 +39,10 @@ fun MainScaffold(
         },
         bottomBar = {
             if (showBottomBar) {
-                BottomNavBar(navController)
+                BottomNavBar(navController = navController)
             }
         }
     ) { padding ->
         content(padding)
     }
 }
-
-

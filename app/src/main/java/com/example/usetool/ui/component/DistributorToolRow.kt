@@ -1,33 +1,42 @@
-package com.example.usetool.component
+package com.example.usetool.ui.component // Pacchetto aggiornato al nuovo refactoring
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.usetool.model.Tool
+import com.example.usetool.data.dao.ToolEntity
 import com.example.usetool.ui.theme.BlueLight
 import com.example.usetool.ui.theme.BlueMedium
 import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.ui.theme.GreyMedium
 
+/**
+ * Versione aggiornata di DistributorToolRow che utilizza ToolEntity dal database.
+ * Mantiene la stessa struttura visuale del componente originale.
+ */
 @Composable
 fun DistributorToolRow(
-    tool: Tool,
+    tool: ToolEntity, // Collegato al DAO
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    val alpha = if (tool.available) 1f else 0.4f
+    // Nota: ToolEntity non ha il campo 'available', assumiamo sia gestito a monte
+    // o che l'attrezzo sia disponibile se presente nel database dei distributori.
+    val alpha = 1f
     val priceColor = if (checked) BluePrimary else Color.Black
 
     Card(
@@ -44,89 +53,56 @@ fun DistributorToolRow(
                 .fillMaxWidth()
                 .toggleable(
                     value = checked,
-                    enabled = tool.available,
                     onValueChange = onCheckedChange
                 )
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            // COLONNA 1: IMMAGINE
+            // COLONNA 1: IMMAGINE (Placeholder Icon per ToolEntity)
             Box(
                 modifier = Modifier.weight(0.8f),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.foundation.Image(
-                    painter = painterResource(tool.imageRes),
+                Icon(
+                    imageVector = Icons.Default.Build,
                     contentDescription = tool.name,
-                    modifier = Modifier
-                        .size(64.dp)
+                    modifier = Modifier.size(48.dp),
+                    tint = BluePrimary.copy(alpha = 0.6f)
                 )
             }
 
-            // COLONNA 2: NOME + DATI TECNICI
+            // COLONNA 2: NOME + DESCRIZIONE (Sostituisce TechnicalData)
             Column(
                 modifier = Modifier.weight(2.4f),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // NOME CENTRATO
                 Text(
                     text = tool.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(Modifier.height(6.dp))
 
-                // RIQUADRO DATI TECNICI
-                if (tool.technicalData.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(BlueLight, RoundedCornerShape(8.dp))
-                            .padding(vertical = 8.dp, horizontal = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            tool.technicalData.entries
-                                .take(3)
-                                .forEachIndexed { index, entry ->
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        modifier = Modifier.weight(1f)
-                                    ) {
-                                        Text(
-                                            text = entry.key,
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontSize = 10.sp
-                                            )
-                                        )
-                                        Spacer(Modifier.height(2.dp))
-                                        Text(
-                                            text = entry.value,
-                                            style = MaterialTheme.typography.bodySmall.copy(
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                        )
-                                    }
-
-                                    if (index < minOf(2, tool.technicalData.size - 1)) {
-                                        Spacer(
-                                            modifier = Modifier
-                                                .width(1.dp)
-                                                .height(28.dp)
-                                                .background(Color.Gray.copy(alpha = 0.5f))
-                                        )
-                                    }
-                                }
-                        }
-                    }
-                } else {
-                    Spacer(Modifier.height(14.dp))
+                // RIQUADRO INFORMAZIONI (Usa la descrizione dell'Entity)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(BlueLight, RoundedCornerShape(8.dp))
+                        .padding(vertical = 6.dp, horizontal = 8.dp)
+                ) {
+                    Text(
+                        text = tool.description,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 
@@ -138,7 +114,6 @@ fun DistributorToolRow(
                 Checkbox(
                     checked = checked,
                     onCheckedChange = null,
-                    enabled = tool.available,
                     colors = CheckboxDefaults.colors(
                         checkedColor = BlueMedium,
                         uncheckedColor = Color.Gray,
@@ -148,13 +123,19 @@ fun DistributorToolRow(
 
                 Spacer(Modifier.height(8.dp))
 
+                // Logica prezzo basata sul campo 'type' di ToolEntity
+                val priceDisplay = if (tool.type == "noleggio") {
+                    "€${tool.price} / h"
+                } else {
+                    "€${tool.price}"
+                }
+
                 Text(
-                    text = tool.pricePerHour?.let { "€$it / h" }
-                        ?: tool.purchasePrice?.let { "€$it" }
-                        ?: "",
+                    text = priceDisplay,
                     color = priceColor,
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 13.sp
                 )
             }
         }

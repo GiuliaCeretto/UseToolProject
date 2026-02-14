@@ -12,8 +12,8 @@ class OrderRepository(
     private val dataSource: DataSource,
     private val purchaseDao: PurchaseDao,
     private val rentalDao: RentalDao,
-    private val cartDao: CartDao,       // AGGIUNTO per recuperare i dettagli degli item
-    private val toolDao: ToolDao,       // AGGIUNTO per recuperare i tipi di tool (acquisto/noleggio)
+    private val cartDao: CartDao,
+    private val toolDao: ToolDao,
     private val cartRepository: CartRepository
 ) {
     val localPurchases: Flow<List<PurchaseEntity>> = purchaseDao.getAll()
@@ -28,19 +28,19 @@ class OrderRepository(
         }
     }
 
-    /**
-     * CORRETTO: Ora accetta CartEntity e recupera internamente i dati necessari.
-     */
     suspend fun processCheckout(userId: String, cart: CartEntity) {
         val updates = mutableMapOf<String, Any?>()
         val now = System.currentTimeMillis()
 
-        // Recupera gli item del carrello e la lista dei tools dai DAO locali
-        val items = cartDao.getItemsByCartId(cart.id).firstOrNull() ?: emptyList()
+        // RECUPERO DATI: Se il carrello è vuoto, lanciamo un errore esplicito
+        val items = cartDao.getItemsByCartId(cart.id).firstOrNull()
+            ?: throw IllegalStateException("Il carrello risulta vuoto. Impossibile procedere.")
+
+        if (items.isEmpty()) throw IllegalStateException("Nessun articolo nel carrello.")
+
         val toolsList = toolDao.getAllTools().firstOrNull() ?: emptyList()
 
         items.forEach { item ->
-            // Trova il tool corrispondente per conoscerne il tipo (acquisto o noleggio)
             val tool = toolsList.find { it.name == item.toolName } ?: return@forEach
 
             if (tool.type == "acquisto") {
@@ -50,7 +50,7 @@ class OrderRepository(
                     toolName = tool.name,
                     prezzoPagato = tool.price,
                     dataAcquisto = now,
-                    lockerId = "Locker_Default" // O recuperato da SlotEntity se aggiunto
+                    lockerId = "Locker_Default"
                 )
                 updates["slots/${item.slotId}/status"] = "VUOTO"
             } else {
@@ -68,12 +68,10 @@ class OrderRepository(
             }
         }
 
-        // Resetta il carrello su Firebase
         updates["carts/$userId"] = CartDTO(userId = userId, status = "CONFERMATO")
-
         dataSource.updateMultipleNodes(updates)
 
-        // Svuota Room localmente
+        // Svuota Room localmente solo dopo il successo su Firebase
         cartRepository.clearLocalCart(cart.id)
     }
 

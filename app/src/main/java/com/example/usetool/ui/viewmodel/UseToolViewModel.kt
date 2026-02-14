@@ -4,16 +4,23 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.usetool.data.dao.SlotEntity
 import com.example.usetool.data.repository.InventoryRepository
+import com.example.usetool.data.service.Injection
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlin.math.*
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class UseToolViewModel(
-    private val inventoryRepository: InventoryRepository
+    private val inventoryRepository: InventoryRepository = Injection.provideInventoryRepository()
 ) : ViewModel() {
 
     private val userLat = 45.0703
     private val userLon = 7.6869
+
+    private val _errorMessage = MutableSharedFlow<String>()
+    val errorMessage = _errorMessage.asSharedFlow()
 
     val topTools = inventoryRepository.allTools.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val lockers = inventoryRepository.allLockers.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -27,7 +34,9 @@ class UseToolViewModel(
         viewModelScope.launch {
             try {
                 inventoryRepository.syncFromNetwork()
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (_: Exception) {
+                _errorMessage.emit("Errore di sincronizzazione inventario")
+            }
         }
     }
 
@@ -52,7 +61,9 @@ class UseToolViewModel(
         val r = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2).pow(2) + cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2)
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLon / 2) * sin(dLon / 2)
         val c = 2 * atan2(sqrt(a), sqrt(1 - a))
         return r * c
     }

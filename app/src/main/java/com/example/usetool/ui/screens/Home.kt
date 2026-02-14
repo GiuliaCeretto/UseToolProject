@@ -1,11 +1,13 @@
-package com.example.usetool.ui.screens.home
+package com.example.usetool.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
@@ -16,45 +18,48 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.usetool.R
+import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.component.*
-import com.example.usetool.navigation.*
-import com.example.usetool.ui.viewmodel.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.unit.sp
-import com.example.usetool.ui.theme.BluePrimary
-import com.example.usetool.ui.theme.YellowMedium
-import com.example.usetool.ui.theme.YellowPrimary
-
+import com.example.usetool.ui.theme.*
+import com.example.usetool.ui.viewmodel.UserViewModel
+import com.example.usetool.ui.viewmodel.UseToolViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.merge
 
 @Composable
 fun HomeScreen(
     navController: NavController,
     vm: UseToolViewModel,
-    userVm: UserViewModel // Aggiunto per gestire i noleggi reali dell'utente
+    userVm: UserViewModel
 ) {
-    // Osservazione stati dalle Entity di Room
     val tools by vm.topTools.collectAsState()
     val lockers by vm.lockers.collectAsState()
     val rentals by userVm.rentals.collectAsState()
+    val profile by userVm.userProfile.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    // Raccoglie errori da entrambi i ViewModel
+    LaunchedEffect(vm.errorMessage, userVm.errorMessage) {
+        merge(vm.errorMessage, userVm.errorMessage).collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { padding ->
         Column(
             modifier = Modifier
+                .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-
-            // SALUTO DINAMICO (opzionale: prendi nome da userProfile)
-            val profile by userVm.userProfile.collectAsState()
             Text(
                 text = "Ciao, ${profile?.nome ?: "Mario"} 👋",
                 style = MaterialTheme.typography.titleLarge
@@ -62,7 +67,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(20.dp))
 
-            // I TUOI NOLEGGI (Filtrati sui noleggi ATTIVI dal database)
             if (rentals.any { it.statoNoleggio == "ATTIVO" }) {
                 Text(
                     text = "I tuoi noleggi attivi",
@@ -71,7 +75,6 @@ fun HomeScreen(
 
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(rentals.filter { it.statoNoleggio == "ATTIVO" }) { rental ->
-                        // Cerchiamo l'Entity dell'attrezzo corrispondente per mostrare i dettagli
                         val tool = tools.find { it.id == rental.toolId }
                         tool?.let {
                             ToolCardSmall(
@@ -86,7 +89,6 @@ fun HomeScreen(
                 Spacer(Modifier.height(24.dp))
             }
 
-            // SWITCHER
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -99,9 +101,7 @@ fun HomeScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // CONTENUTO SWITCHER
             if (selectedTab == 0) {
-                // POPOLARI (Primi 5 attrezzi toolEntity)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(tools.take(5)) { tool ->
                         ToolCardSmall(
@@ -113,12 +113,12 @@ fun HomeScreen(
                     }
                 }
             } else {
-                // VICINI A TE (LockerEntity ordinati per distanza calcolata nel VM)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(lockers.take(5)) { locker ->
                         LockerCardSmall(
                             locker = locker,
-                            distanceKm = vm.getDistanceForTool(lockers.firstOrNull()?.id ?: ""), // Esempio distanza
+                            // Calcolo distanza reale dal ViewModel
+                            distanceKm = vm.getDistanceForTool(tools.firstOrNull()?.id ?: ""),
                             onClick = {
                                 navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
                             }
@@ -129,7 +129,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // MAPPA
             Text(
                 text = "Trova sulla mappa",
                 style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp)
@@ -153,7 +152,6 @@ fun HomeScreen(
                     )
 
                     lockers.forEachIndexed { index, locker ->
-                        // Calcolo posizionamento fittizio basato su lat/lon reali dell'Entity
                         val xPos = (40 + (locker.lon % 1.0) * 1000).dp
                         val yPos = (60 + (locker.lat % 1.0) * 1000).dp
 
@@ -188,7 +186,6 @@ fun HomeScreen(
         }
     }
 }
-
 
 @Composable
 fun HomeSwitcher(
@@ -232,13 +229,8 @@ private fun SwitcherItem(
         Text(
             text = text,
             color = if (selected) Color.Black else Color.DarkGray,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontSize = 14.sp,
-            ),
+            style = MaterialTheme.typography.labelMedium.copy(fontSize = 14.sp),
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-
     }
 }
-
-

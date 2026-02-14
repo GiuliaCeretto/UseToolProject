@@ -1,0 +1,143 @@
+package com.example.usetool.ui.screens
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.usetool.ui.component.*
+import com.example.usetool.ui.theme.Green2
+import com.example.usetool.ui.theme.GreyLight
+import com.example.usetool.ui.viewmodel.ExpertViewModel
+import kotlinx.coroutines.flow.collectLatest
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun Consulenza(
+    navController: NavController,
+    expertViewModel: ExpertViewModel
+) {
+    // Osserva la lista degli esperti dal database locale (ExpertEntity)
+    val experts by expertViewModel.experts.collectAsState()
+
+    // Stato per la gestione degli snackbar (errori)
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Raccoglie i messaggi di errore dal ViewModel e li mostra nella UI
+    LaunchedEffect(expertViewModel.errorMessage) {
+        expertViewModel.errorMessage.collectLatest { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    // Stato locale per ricerca e filtri
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedProfession by remember { mutableStateOf<String?>(null) }
+
+    // Logica di filtraggio basata sulle Entity del database
+    val filteredExperts = experts.filter { expert ->
+        val matchesSearch = searchQuery.isEmpty() ||
+                "${expert.firstName} ${expert.lastName}".contains(searchQuery, ignoreCase = true)
+        val matchesProfession = selectedProfession == null || expert.profession == selectedProfession
+
+        matchesSearch && matchesProfession
+    }
+
+    // Estrae le professioni uniche per i Chip
+    val professions = experts.map { it.profession }.distinct()
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }, // Host per i messaggi di errore
+        topBar = { AppTopBar(navController) },
+        bottomBar = { BottomNavBar(navController) }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Rubrica esperti",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // BARRA DI RICERCA STILIZZATA
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Cerca esperto") },
+                placeholder = { Text("Nome o cognome...") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Green2,
+                    unfocusedBorderColor = GreyLight
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // CAROSELLO PROFESSIONI (FILTRI)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                item {
+                    FilterChip(
+                        selected = selectedProfession == null,
+                        onClick = { selectedProfession = null },
+                        label = { Text("Tutte") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Green2
+                        )
+                    )
+                }
+                items(professions) { profession ->
+                    FilterChip(
+                        selected = selectedProfession == profession,
+                        onClick = { selectedProfession = profession },
+                        label = { Text(profession) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Green2
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // GRIGLIA ESPERTI
+            if (experts.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Green2)
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(filteredExperts) { expert ->
+                        ConsultantCard(
+                            expert = expert,
+                            navController = navController
+                        )
+                    }
+                }
+            }
+        }
+    }
+}

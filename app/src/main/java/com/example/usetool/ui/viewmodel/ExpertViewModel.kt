@@ -2,19 +2,23 @@ package com.example.usetool.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.usetool.data.dao.ExpertEntity
 import com.example.usetool.data.repository.ExpertRepository
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import com.example.usetool.data.service.Injection
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class ExpertViewModel(private val repository: ExpertRepository) : ViewModel() {
+class ExpertViewModel(
+    private val expertRepository: ExpertRepository = Injection.provideExpertRepository()
+) : ViewModel() {
 
-    // Il flusso parte al primo ascoltatore e rimane attivo finché il ViewModel esiste
-    val experts: StateFlow<List<com.example.usetool.data.dao.ExpertEntity>> = repository.experts
+    private val _errorMessage = MutableSharedFlow<String>()
+    val errorMessage = _errorMessage.asSharedFlow()
+
+    val experts: StateFlow<List<ExpertEntity>> = expertRepository.experts
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Lazily,
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
@@ -25,9 +29,9 @@ class ExpertViewModel(private val repository: ExpertRepository) : ViewModel() {
     fun refreshExperts() {
         viewModelScope.launch {
             try {
-                repository.syncExperts()
+                expertRepository.syncExperts()
             } catch (_: Exception) {
-                // L'underscore ignora l'eccezione senza generare warning
+                _errorMessage.emit("Errore nel caricamento esperti")
             }
         }
     }

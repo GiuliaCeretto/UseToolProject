@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-// Import aggiornato per puntare all'Entity di Room
 import com.example.usetool.data.dao.ToolEntity
 
 /**

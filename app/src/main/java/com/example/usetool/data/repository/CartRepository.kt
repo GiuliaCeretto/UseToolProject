@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.firstOrNull
 class CartRepository(
     private val dataSource: DataSource,
     private val cartDao: CartDao,
-    private val toolDao: ToolDao // Iniettato per ricalcolare i prezzi
+    private val toolDao: ToolDao
 ) {
     fun getActiveCart(userId: String) = cartDao.getActiveCart(userId)
 
@@ -18,6 +18,7 @@ class CartRepository(
         cartDao.getItemsByCartId(cartId)
 
     suspend fun addItemToCart(userId: String, tool: ToolEntity, slot: SlotEntity) {
+        // Se il recupero fallisce per motivi tecnici, l'eccezione salirà al ViewModel
         val currentCartDto = dataSource.observeUserCart(userId).firstOrNull()
             ?: CartDTO(userId = userId, id = "cart_$userId", status = "PENDING")
 
@@ -34,8 +35,11 @@ class CartRepository(
             "slots/${slot.id}/status" to "IN_CARRELLO",
             "carts/$userId" to nuovoCarrelloDto
         )
+
+        // Esegue l'aggiornamento remoto; se fallisce (es. No Internet), Room NON viene aggiornato
         dataSource.updateMultipleNodes(updates)
 
+        // Aggiorna la persistenza locale (Room)
         cartDao.insertCart(nuovoCarrelloDto.toEntity())
 
         val itemEntities = nuovoCarrelloDto.items.map { (_, s) ->
@@ -50,7 +54,9 @@ class CartRepository(
     }
 
     suspend fun removeItemFromCart(userId: String, slotId: String) {
-        val currentCartDto = dataSource.observeUserCart(userId).firstOrNull() ?: return
+        val currentCartDto = dataSource.observeUserCart(userId).firstOrNull()
+            ?: throw IllegalStateException("Impossibile trovare il carrello sul server.")
+
         val allTools = toolDao.getAllTools().firstOrNull() ?: emptyList()
 
         val updatedItems = currentCartDto.items.toMutableMap()
@@ -66,6 +72,7 @@ class CartRepository(
             "slots/$slotId/status" to "DISPONIBILE",
             "carts/$userId" to nuovoCarrelloDto
         )
+
         dataSource.updateMultipleNodes(updates)
 
         cartDao.insertCart(nuovoCarrelloDto.toEntity())

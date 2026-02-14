@@ -5,6 +5,7 @@ import com.example.usetool.data.network.DataSource
 import com.example.usetool.data.network.FirebaseProvider
 import com.example.usetool.data.repository.*
 import com.example.usetool.data.AppDatabase
+import com.google.firebase.auth.FirebaseAuth
 
 object Injection {
     private var database: AppDatabase? = null
@@ -33,7 +34,8 @@ object Injection {
 
     fun provideUserRepository() = UserRepository(
         dataSource = DataSource(FirebaseProvider()),
-        userDao = getDb().userDao()
+        userDao = getDb().userDao(),
+        firebaseAuth = FirebaseAuth.getInstance()
     )
 
     fun provideOrderRepository() = OrderRepository(

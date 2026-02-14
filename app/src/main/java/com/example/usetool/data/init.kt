@@ -1,4 +1,4 @@
-package com.example.usetool.data.init // Spostalo nel nuovo pacchetto se hai seguito la gerarchia
+package com.example.usetool.data // Spostalo nel nuovo pacchetto se hai seguito la gerarchia
 
 import android.content.Context
 import android.util.Log

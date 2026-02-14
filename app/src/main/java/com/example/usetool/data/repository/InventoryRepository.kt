@@ -10,24 +10,33 @@ class InventoryRepository(
     private val dataSource: DataSource,
     private val toolDao: ToolDao,
     private val slotDao: SlotDao,
-    private val lockerDao: LockerDao // Aggiunto per risolvere i warning di LockerDao
+    private val lockerDao: LockerDao
 ) {
-    // RISOLTO: Utilizzo di getAll(), getAllTools() e getAllSlots()
     val allLockers: Flow<List<LockerEntity>> = lockerDao.getAll()
     val allTools: Flow<List<ToolEntity>> = toolDao.getAllTools()
     val allSlots: Flow<List<SlotEntity>> = slotDao.getAllSlots()
 
-    // RISOLTO: Utilizzo di getSlotsByLocker()
     fun getSlotsForLocker(lockerId: String): Flow<List<SlotEntity>> =
         slotDao.getSlotsByLocker(lockerId)
 
     suspend fun syncFromNetwork() {
-        dataSource.observeTools().collectLatest { toolDao.insertTools(it.toEntityList()) }
-        dataSource.observeSlots().collectLatest { slotDao.insertSlots(it.toEntityList()) }
-        dataSource.observeLockers().collectLatest { lockerDao.insertAll(it.toEntityList()) }
+        // Avvolgiamo ogni sincronizzazione per permettere il completamento parziale
+        try {
+            dataSource.observeTools().collectLatest { toolDao.insertTools(it.toEntityList()) }
+        } catch (_: Exception) { /* Errore loggabile o gestito dal chiamante */ }
+
+        try {
+            dataSource.observeSlots().collectLatest { slotDao.insertSlots(it.toEntityList()) }
+        } catch (_: Exception) { /* Prosegue con gli altri */ }
+
+        try {
+            dataSource.observeLockers().collectLatest { lockerDao.insertAll(it.toEntityList()) }
+        } catch (e: Exception) {
+            // Rilanciamo l'eccezione se vogliamo che il ViewModel sappia del fallimento totale/parziale
+            throw e
+        }
     }
 
-    // RISOLTO: Utilizzo di clearAll() per Tool e Slot
     suspend fun clearCache() {
         toolDao.clearAll()
         slotDao.clearAll()

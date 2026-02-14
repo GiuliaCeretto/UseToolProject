@@ -1,35 +1,37 @@
-package com.example.usetool.component
+package com.example.usetool.ui.component // Pacchetto aggiornato secondo il tuo refactoring
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.usetool.model.Tool
+import com.example.usetool.data.dao.ToolEntity
 import kotlin.math.roundToInt
 
+/**
+ * Versione "Mini" della ToolCard collegata al database locale.
+ * Ideale per caroselli orizzontali o griglie dense.
+ */
 @Composable
 fun ToolCardMini(
-    tool: Tool,
+    tool: ToolEntity, // Riferimento al DAO
     distanceKm: Float? = null,
     onClick: () -> Unit
 ) {
-    // Dimensioni fisse per tutte le card
-    val cardWidth = 60.dp
-    val cardHeight = 150.dp
-    val imageHeight = 80.dp
+    // Dimensioni fisse originali
+    val cardWidth = 140.dp // Aumentato leggermente da 60.dp per rendere il testo leggibile
+    val cardHeight = 160.dp
 
     Card(
         modifier = Modifier
@@ -37,60 +39,69 @@ fun ToolCardMini(
             .height(cardHeight)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, Color.LightGray)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(4.dp),
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            // NOME
+            // NOME (Dal DAO)
             Text(
-                text = tool.name ?: "",
-                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                maxLines = 2
+                text = tool.name,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
 
-            // FOTO
-            Image(
-                painter = painterResource(tool.imageRes),
-                contentDescription = tool.name,
+            // ICONA/IMMAGINE
+            // Poiché ToolEntity non ha imageRes, usiamo un'icona o un box placeholder
+            Box(
                 modifier = Modifier
-                    .height(imageHeight)
-                    .fillMaxWidth(),
-                contentScale = ContentScale.Fit
-            )
-
-            // DISTANZA E PREZZO
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                    .size(60.dp)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
             ) {
+                Icon(
+                    imageVector = Icons.Default.Build,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                )
+            }
+
+            // INFO PREZZO E DISTANZA
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Prezzo basato sulla logica ToolEntity (prezzo unico vs orario)
+                val priceLabel = if (tool.type == "noleggio") "€${tool.price}/h" else "€${tool.price}"
+
+                Text(
+                    text = priceLabel,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                )
+
                 distanceKm?.let {
                     Text(
                         text = "${it.roundToInt()} km",
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 14.sp)
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 11.sp,
+                            color = Color.Gray
+                        )
                     )
                 }
-
-                Spacer(modifier = Modifier.width(26.dp))
-
-                Text(
-                    text = when {
-                        tool.pricePerHour != null -> "€ ${tool.pricePerHour}/h"
-                        tool.purchasePrice != null -> "€ ${tool.purchasePrice}"
-                        else -> ""
-                    },
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp)
-                )
             }
         }
     }
 }
-

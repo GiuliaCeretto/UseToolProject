@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.example.usetool.ui.screens.linking
+package com.example.usetool.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.usetool.ui.component.BottomNavBar
-import com.example.usetool.ui.viewmodel.UseToolViewModel
 
 @Composable
 fun CollegamentoScreen(

@@ -1,4 +1,4 @@
-package com.example.usetool.component
+package com.example.usetool.ui.component
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
