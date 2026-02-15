@@ -12,12 +12,24 @@ data class CartEntity(
     val ultimoAggiornamento: Long = System.currentTimeMillis()
 )
 
-@Entity(tableName = "cart_items")
+@Entity(
+    tableName = "cart_items",
+    foreignKeys = [
+        ForeignKey(
+            entity = CartEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["cartId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("cartId")]
+)
 data class CartItemEntity(
     @PrimaryKey(autoGenerate = true) val entryId: Long = 0,
     val cartId: String,
     val slotId: String,
-    val toolId: String, // Aggiunto per coerenza con SlotDTO
+    val toolId: String,
+    val lockerId: String,
     val toolName: String,
     val price: Double,
     val quantity: Int = 1
@@ -25,18 +37,21 @@ data class CartItemEntity(
 
 @Dao
 interface CartDao {
-
     @Query("SELECT * FROM cart WHERE userId = :userId AND status = 'PENDING' LIMIT 1")
     fun getActiveCart(userId: String): Flow<CartEntity?>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCart(cart: CartEntity)
-
-    @Query("DELETE FROM cart WHERE id = :cartId")
-    suspend fun deleteCart(cartId: String)
-
     @Query("SELECT * FROM cart_items WHERE cartId = :cartId")
     fun getItemsByCartId(cartId: String): Flow<List<CartItemEntity>>
+
+    // 🔥 INDISPENSABILE: Per lo scudo nel repository degli inventari
+    @Query("SELECT * FROM cart_items")
+    fun getAllCartItems(): Flow<List<CartItemEntity>>
+
+    @Query("SELECT * FROM cart_items")
+    suspend fun getAllCartItemsSnapshot(): List<CartItemEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertCart(cart: CartEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCartItems(items: List<CartItemEntity>)
@@ -44,10 +59,13 @@ interface CartDao {
     @Query("DELETE FROM cart_items WHERE cartId = :cartId")
     suspend fun deleteItemsByCartId(cartId: String)
 
+    @Query("DELETE FROM cart WHERE id = :cartId")
+    suspend fun deleteCart(cartId: String)
+
     @Transaction
     suspend fun updateFullCart(cart: CartEntity, items: List<CartItemEntity>) {
         insertCart(cart)
-        deleteItemsByCartId(cart.id) // Evita duplicati da entryId autoincrementale
+        deleteItemsByCartId(cart.id)
         insertCartItems(items)
     }
 

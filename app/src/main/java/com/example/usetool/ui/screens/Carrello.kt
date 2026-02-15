@@ -3,6 +3,7 @@ package com.example.usetool.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,36 +12,38 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.component.CartItemCard
 import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.ui.theme.GreyLight
 import com.example.usetool.ui.viewmodel.CartViewModel
 import kotlinx.coroutines.flow.collectLatest
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarrelloScreen(
     navController: NavController,
     cartViewModel: CartViewModel
 ) {
-    // CORREZIONE: Uso di collectAsStateWithLifecycle per efficienza energetica e dati
+    // Osservazione reattiva dei dati dal database locale (Room)
     val cartHeader by cartViewModel.cartHeader.collectAsStateWithLifecycle()
     val items by cartViewModel.cartItems.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Raccoglie errori e messaggi di sistema
-    LaunchedEffect(cartViewModel.errorMessage) {
-        cartViewModel.errorMessage.collectLatest { message ->
-            snackbarHostState.showSnackbar(message)
-        }
+    // Filtro locale degli articoli
+    val filteredItems = remember(items, searchQuery) {
+        items.filter { it.toolName.contains(searchQuery, ignoreCase = true) }
     }
 
-    // Filtro locale degli articoli basato sulla ricerca
-    val filteredItems = items.filter { it.toolName.contains(searchQuery, ignoreCase = true) }
-
     Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("CARRELLO", fontWeight = FontWeight.Bold) }
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -49,17 +52,19 @@ fun CarrelloScreen(
                 .padding(16.dp)
         ) {
             Text(
-                text = "Il Tuo Carrello",
-                style = MaterialTheme.typography.headlineMedium,
+                text = "I tuoi articoli",
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 12.dp)
             )
 
+            // Barra di ricerca interna al carrello
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Cerca negli articoli") },
+                label = { Text("Cerca nel carrello...") },
                 modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BluePrimary,
                     unfocusedBorderColor = GreyLight
@@ -68,6 +73,7 @@ fun CarrelloScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Stato vuoto
             if (items.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -75,59 +81,74 @@ fun CarrelloScreen(
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Il carrello è vuoto", color = MaterialTheme.colorScheme.secondary)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Il carrello è vuoto", style = MaterialTheme.typography.bodyLarge)
+                        TextButton(onClick = { navController.popBackStack() }) {
+                            Text("Torna allo shop", color = BluePrimary)
+                        }
+                    }
                 }
             } else {
+                // Lista articoli con scorrimento
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(filteredItems) { item ->
+                    items(filteredItems, key = { it.slotId }) { item ->
                         CartItemCard(
                             item = item,
-                            onIncrease = { /* Gestione quantità se prevista dal DTO */ },
-                            onDecrease = { /* Gestione quantità se prevista dal DTO */ },
+                            onIncrease = { /* Implementare se necessario */ },
+                            onDecrease = { /* Implementare se necessario */ },
                             onRemove = { cartViewModel.removeItem(item.slotId) }
                         )
                     }
                 }
             }
 
-            // Calcolo totale basato sulla testata del carrello sincronizzata
+            // --- FOOTER RIEPILOGO ---
             val totale = cartHeader?.totaleProvvisorio ?: 0.0
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                elevation = CardDefaults.cardElevation(4.dp)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                tonalElevation = 8.dp,
+                shadowElevation = 12.dp,
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Totale", style = MaterialTheme.typography.titleMedium)
+                        Text("Totale provvisorio", style = MaterialTheme.typography.titleMedium)
                         Text(
                             text = "€ ${"%.2f".format(totale)}",
-                            style = MaterialTheme.typography.headlineSmall,
+                            style = MaterialTheme.typography.headlineMedium,
                             color = BluePrimary,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Black
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     Button(
                         onClick = {
-                            cartViewModel.performCheckout()
-                            // Suggerimento: Aggiungere qui la navigazione dopo il successo del checkout
+                            // Navigazione alla PagamentoScreen passata come riferimento
+                            navController.navigate(NavRoutes.Pagamento.route)
                         },
-                        enabled = items.isNotEmpty(), // Disabilita se il carrello è vuoto
+                        enabled = items.isNotEmpty(),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
                     ) {
-                        Text("Paga Ora")
+                        Text(
+                            text = "VAI AL PAGAMENTO",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }

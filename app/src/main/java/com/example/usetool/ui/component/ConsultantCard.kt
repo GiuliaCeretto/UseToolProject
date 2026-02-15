@@ -1,89 +1,131 @@
 package com.example.usetool.ui.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.usetool.R
-import com.example.usetool.data.dao.ExpertEntity // IMPORTA IL DAO
+import com.example.usetool.data.dao.ExpertEntity
+import com.example.usetool.navigation.NavRoutes // Importa le tue rotte
 import com.example.usetool.ui.theme.Green1
 import com.example.usetool.ui.theme.Green2
 
 @Composable
 fun ConsultantCard(
-    expert: ExpertEntity, // SOSTITUITO Expert (Model) con ExpertEntity (DAO)
+    expert: ExpertEntity,
     navController: NavController
 ) {
     Card(
         modifier = Modifier
-            .width(200.dp)
+            .fillMaxWidth()
+            .padding(16.dp)
             .clickable {
-                // Navigazione dinamica usando l'ID dell'esperto dal database
-                navController.navigate("expert_detail/${expert.id}")
+                navController.navigate(NavRoutes.SchedaConsulente.createRoute(expert.id))
             },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(8.dp), // Angoli meno arrotondati come nel design
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        border = BorderStroke(1.dp, Color.LightGray) // Bordo sottile grigio
     ) {
         Column(
-            modifier = Modifier.padding(10.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(20.dp), // Padding interno generoso
+            horizontalAlignment = Alignment.Start // Tutto allineato a sinistra
         ) {
-            // NOME E COGNOME (Uniti dal DAO)
-            Text(
-                text = "${expert.firstName} ${expert.lastName}",
-                style = MaterialTheme.typography.titleMedium,
-                color = Green1,
-                modifier = Modifier.padding(bottom = 8.dp)
+            // Icona "Torna indietro" (Opzionale, se fa parte della card)
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = "Back",
+                modifier = Modifier.size(24.dp).padding(bottom = 12.dp),
+                tint = Color.DarkGray
             )
 
-            // FOTO (Gestione placeholder se imageUrl è vuota)
+            // Contenitore Immagine con sfondo verde chiaro
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(130.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Green2),
+                    .height(180.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color(0xFFE8F9ED)), // Verde chiarissimo dell'immagine
                 contentAlignment = Alignment.Center
             ) {
-                // Se hai immagini locali/risorse puoi usare expert.imageUrl
-                // Qui usiamo un placeholder come nel tuo stile originale
                 Image(
                     painter = painterResource(id = R.drawable.placeholder_profilo),
-                    contentDescription = expert.firstName,
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxHeight(0.8f),
+                    contentScale = ContentScale.Fit
                 )
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // PROFESSIONE
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                Text(
-                    text = expert.profession, // Dal DAO
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Green1
-                    )
+            // Titolo Professione (es. Elettricista)
+            Text(
+                text = expert.profession,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF4A9078) // Il verde scuro del titolo
                 )
+            )
+
+            Spacer(Modifier.height(8.dp))
+
+            // Descrizione
+            Text(
+                text = "Conosco bene i vecchi impianti delle case in affitto. Scrivimi se devi sostituire una placchetta rotta...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.DarkGray,
+                lineHeight = 20.sp
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Specialità
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4A9078)
+                    )
+                    ) {
+                        append("Specialità: ")
+                    }
+                    append("Spiegazioni semplici, zero termini tecnici")
+                },
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Spacer(Modifier.height(24.dp))
+
+            // Pulsante Contatta
+            Button(
+                onClick = { /* Azione contatta */ },
+                modifier = Modifier
+                    .fillMaxWidth(0.8f) // Non occupa tutta la larghezza
+                    .align(Alignment.CenterHorizontally)
+                    .height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7B8F7B)), // Verde salvia
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Text("CONTATTA", style = MaterialTheme.typography.labelLarge)
             }
         }
     }

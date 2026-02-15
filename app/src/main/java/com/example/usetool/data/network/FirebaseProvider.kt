@@ -4,7 +4,9 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 
 class FirebaseProvider {
-    private val db: DatabaseReference = FirebaseDatabase.getInstance().reference
+    private val db: DatabaseReference = FirebaseDatabase
+        .getInstance("https://usetool-57cec-default-rtdb.europe-west1.firebasedatabase.app")
+        .reference
 
     fun getToolsRef() = db.child("tools")
     fun getLockersRef() = db.child("lockers")

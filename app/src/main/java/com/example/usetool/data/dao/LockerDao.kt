@@ -14,8 +14,13 @@ data class LockerEntity(
     val name: String,
     val address: String,
     val city: String,
+    val zipCode: String,
     val lat: Double,
-    val lon: Double
+    val lon: Double,
+    val saleSlotsCount: Int,
+    val rentalSlotsCount: Int,
+    val macAddress: String,
+    val toolIds: List<String> // Richiede il Converter
 )
 
 @Dao
@@ -25,4 +30,7 @@ interface LockerDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(lockers: List<LockerEntity>)
+
+    @Query("DELETE FROM lockers")
+    suspend fun clearAll()
 }

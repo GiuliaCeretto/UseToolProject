@@ -8,6 +8,21 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import kotlinx.coroutines.flow.Flow
 
+@Entity(tableName = "tools")
+data class ToolEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val description: String,
+    val price: Double,
+    val type: String,
+    val category: String,
+    val imageResName: String,
+    val imageUrl: String?, // Aggiunto per Firebase Storage
+    val videoUrl: String,
+    val pdfUrls: List<String>, // Richiede il Converter
+    val quantity: Int
+)
+
 @Dao
 interface ToolDao {
     @Query("SELECT * FROM tools")
@@ -19,15 +34,3 @@ interface ToolDao {
     @Query("DELETE FROM tools")
     suspend fun clearAll()
 }
-
-@Entity(tableName = "tools")
-data class ToolEntity(
-    @PrimaryKey val id: String,
-    val name: String,
-    val description: String,
-    val price: Double,
-    val type: String,
-    val category: String,         // Aggiunto
-    val imageResName: String,     // Aggiunto
-    val quantity: Int             // Aggiunto
-)

@@ -10,11 +10,12 @@ import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "user_profile")
 data class UserEntity(
-    @PrimaryKey val email: String, // Usiamo l'email come ID univoco dal DTO
+    @PrimaryKey val uid: String,
     val nome: String,
     val cognome: String,
     val telefono: String,
-    val indirizzo: String
+    val indirizzo: String,
+    val email: String
 )
 
 @Dao

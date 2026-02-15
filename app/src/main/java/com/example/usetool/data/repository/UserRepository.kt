@@ -18,6 +18,10 @@ class UserRepository(
     // Espone solo Entity per la UI
     val userProfile: Flow<UserEntity?> = userDao.getProfile()
 
+    fun getCurrentUserId(): String {
+        return firebaseAuth.currentUser?.uid ?: ""
+    }
+
     suspend fun loginWithFirebase(email: String, pass: String): Result<Unit> {
         return try {
             // Ora firebaseAuth è accessibile

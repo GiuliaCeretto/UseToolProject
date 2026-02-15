@@ -32,7 +32,9 @@ import com.example.usetool.ui.theme.GreyMedium
 fun DistributorToolRow(
     tool: ToolEntity, // Collegato al DAO
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    isAlreadyInCart: Boolean,
+    available: Boolean
 ) {
     // Nota: ToolEntity non ha il campo 'available', assumiamo sia gestito a monte
     // o che l'attrezzo sia disponibile se presente nel database dei distributori.

@@ -32,7 +32,6 @@ class UserViewModel(
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
     }
 
-    // RISOLTO: Ora utilizziamo le proprietà del repository per acquisti e noleggi
     val purchases: StateFlow<List<PurchaseEntity>> by lazy {
         orderRepository.localPurchases
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -62,6 +61,40 @@ class UserViewModel(
             } catch (_: Exception) {
                 // CORRETTO: Emette errore su SharedFlow senza resettare il login
                 _errorMessage.emit("Errore durante l'aggiornamento del profilo")
+            }
+        }
+    }
+
+    // Aggiungi queste funzioni in UserViewModel.kt
+    fun confirmPickup(purchaseId: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                orderRepository.confirmPurchasePickup(uid, purchaseId)
+            } catch (e: Exception) {
+                _errorMessage.emit("Errore nel confermare il ritiro")
+            }
+        }
+    }
+
+    fun startRental(rentalId: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                orderRepository.confirmStartRental(uid, rentalId)
+            } catch (e: Exception) {
+                _errorMessage.emit("Errore nell'avvio del noleggio")
+            }
+        }
+    }
+
+    fun endRental(rentalId: String, slotId: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                orderRepository.confirmEndRental(uid, rentalId, slotId)
+            } catch (e: Exception) {
+                _errorMessage.emit("Errore nella riconsegna")
             }
         }
     }
@@ -103,6 +136,8 @@ class UserViewModel(
             _loginState.value = LoginResult.Idle
         }
     }
+
+
 }
 
 sealed class LoginResult {

@@ -18,7 +18,7 @@ fun AppNavGraph(
     searchViewModel: SearchViewModel,
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
-    expertViewModel: ExpertViewModel, // Fondamentale per Consulenza e Dettaglio
+    expertViewModel: ExpertViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -83,6 +83,10 @@ fun AppNavGraph(
 
         composable(NavRoutes.Login.route) {
             LoginScreen(navController, userViewModel)
+        }
+
+        composable(NavRoutes.Register.route) {
+            RegisterScreen(navController, userViewModel) //
         }
     }
 }

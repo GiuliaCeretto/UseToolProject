@@ -1,110 +1,107 @@
 package com.example.usetool.ui.component
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.usetool.R
 import com.example.usetool.data.dao.ToolEntity
 
-/**
- * Versione aggiornata di ToolCardSmall che utilizza ToolEntity.
- * La logica dei prezzi e dei dati è ora legata ai campi del DB locale.
- */
 @Composable
 fun ToolCardSmall(
-    tool: ToolEntity, // Utilizza ToolEntity
+    tool: ToolEntity,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .width(220.dp)
-            .height(180.dp)
-            .padding(6.dp)
+            .width(160.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .padding(14.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-
-            // HEADER: NOME + PREZZO + ICONA
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-
-                    // Nome recuperato da ToolEntity
-                    Text(
-                        text = tool.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Spacer(Modifier.height(4.dp))
-
-                    // Logica prezzo basata sul campo 'type' (acquisto vs noleggio)
-                    val priceLabel = if (tool.type == "noleggio") {
-                        "€ ${tool.price}/h"
-                    } else {
-                        "€ ${tool.price}"
-                    }
-
-                    Text(
-                        text = priceLabel,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Spacer(Modifier.width(12.dp))
-
-                // Placeholder Icon dato che ToolEntity non dispone di imageRes
-                Icon(
-                    imageVector = Icons.Default.Build,
+        Box {
+            Column(modifier = Modifier.padding(8.dp)) {
+                Image(
+                    painter = painterResource(id = R.drawable.placeholder_tool),
                     contentDescription = tool.name,
-                    modifier = Modifier.size(60.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(90.dp)
+                        .padding(4.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                Text(
+                    text = tool.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    maxLines = 1
+                )
+
+                Text(
+                    text = tool.category,
+                    color = Color.Gray,
+                    fontSize = 11.sp
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // Prezzo dinamico (senza bottone)
+                Text(
+                    text = if (tool.type == "noleggio") "€${tool.price}/ora" else "€${tool.price}",
+                    color = Color(0xFF1A237E),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 15.sp
                 )
             }
 
-            // DESCRIZIONE (Sostituisce technicalData non presente nell'Entity)
-            Column {
-                Text(
-                    text = "Descrizione",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                    color = MaterialTheme.colorScheme.primary
-                )
+            // Badge Tipologia (Acquisto vs Noleggio)
+            val badgeColor = if (tool.type == "noleggio") Color(0xFFE3F2FD) else Color(0xFFFFF8E1)
+            val textColor = if (tool.type == "noleggio") Color(0xFF1976D2) else Color(0xFFFFA000)
 
-                Spacer(Modifier.height(2.dp))
-
+            Surface(
+                color = badgeColor,
+                shape = RoundedCornerShape(bottomStart = 8.dp),
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
                 Text(
-                    text = tool.description,
-                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis,
-                    lineHeight = 14.sp
+                    text = tool.type.uppercase(),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
                 )
             }
         }
+    }
+}
+
+@Composable
+fun InfoColumn(label: String, value: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Gray,
+            fontSize = 10.sp
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp
+        )
     }
 }

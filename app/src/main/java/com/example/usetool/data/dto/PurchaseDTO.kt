@@ -11,5 +11,6 @@ data class PurchaseDTO(
     val dataRitiroEffettiva: Long? = null,
     val lockerId: String? = null,
     val slotId: String? = null,
-    val idTransazionePagamento: String? = null // ID finto del gateway di pagamento
+    val idTransazionePagamento: String? = null, // ID finto del gateway di pagamento
+    val dataRitiro: Long? = null
 )

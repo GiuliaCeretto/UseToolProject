@@ -4,49 +4,52 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.example.usetool.data.dao.*
+import com.example.usetool.data.service.Converters
 
 @Database(
     entities = [
-        UserEntity::class,
-        LockerEntity::class,
-        SlotEntity::class,
         ToolEntity::class,
-        RentalEntity::class,
-        PurchaseEntity::class,
-        ExpertEntity::class,
+        UserEntity::class,
+        SlotEntity::class,
         CartEntity::class,
-        CartItemEntity::class
+        CartItemEntity::class,
+        ExpertEntity::class,
+        LockerEntity::class,
+        PurchaseEntity::class,
+        RentalEntity::class
     ],
-    version = 1,
+    version = 6,
     exportSchema = false
 )
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun userDao(): UserDao
-    abstract fun lockerDao(): LockerDao
-    abstract fun slotDao(): SlotDao
     abstract fun toolDao(): ToolDao
-    abstract fun rentalDao(): RentalDao
-    abstract fun purchaseDao(): PurchaseDao
-    abstract fun expertDao(): ExpertDao
+    abstract fun userDao(): UserDao
+    abstract fun slotDao(): SlotDao
     abstract fun cartDao(): CartDao
+    abstract fun expertDao(): ExpertDao
+    abstract fun lockerDao(): LockerDao
+    abstract fun purchaseDao(): PurchaseDao
+    abstract fun rentalDao(): RentalDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        // Versione ottimizzata della funzione getDatabase
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                Room.databaseBuilder(
+                val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "use_tool_database"
+                    "use_tool_db"
                 )
                     .fallbackToDestructiveMigration()
                     .build()
-                    .also { INSTANCE = it }
+                INSTANCE = instance
+                instance
             }
         }
     }

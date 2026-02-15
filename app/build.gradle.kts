@@ -45,6 +45,9 @@ dependencies {
     // --- ROOM (Local Data Layer) ---
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.play.services.wallet)
     kapt(libs.androidx.room.compiler)
 
     // --- FIREBASE (Remote Data Layer) ---

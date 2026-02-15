@@ -2,26 +2,34 @@ package com.example.usetool.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.usetool.R
 import com.example.usetool.ui.theme.Green1
-import com.example.usetool.ui.theme.Green2
 import com.example.usetool.ui.viewmodel.ExpertViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SchedaConsulenteScreen(
     navController: NavController,
@@ -29,127 +37,158 @@ fun SchedaConsulenteScreen(
     expertViewModel: ExpertViewModel
 ) {
     val context = LocalContext.current
-
-    // Osserva la lista degli esperti dal ViewModel
     val experts by expertViewModel.experts.collectAsState()
-
-    // Utilizziamo remember per calcolare l'esperto solo quando la lista o l'id cambiano
-    val expert = remember(experts, expertId) {
-        experts.find { it.id == expertId }
-    }
-
+    val expert = remember(experts, expertId) { experts.find { it.id == expertId } }
     var showDialog by remember { mutableStateOf(false) }
 
-    // Utilizzo dello Scaffold per una struttura Material3 corretta
-    Scaffold { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            if (expert == null) {
-                // Stato di caricamento o esperto non trovato
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Green1)
-                }
-            } else {
-                // UI Principale
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    // Foto Esperto
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp)
-                            .background(color = Green2, shape = RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center
+    Scaffold(
+        containerColor = Color(0xFFF5F5F5)
+    ) { paddingValues ->
+        if (expert == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Green1)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Inseriamo un piccolo spacer solo se vuoi evitare che tocchi il bordo fisico superiore
+                item { Spacer(modifier = Modifier.height(4.dp)) }
+
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.placeholder_profilo),
-                            contentDescription = "Foto di ${expert.firstName}",
-                            modifier = Modifier.fillMaxSize().padding(16.dp)
-                        )
-                    }
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp)
+                        ) {
 
-                    Text(
-                        text = "${expert.firstName} ${expert.lastName}",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = expert.profession,
-                        color = Green1,
-                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 20.sp),
-                        fontWeight = FontWeight.SemiBold
-                    )
-
-                    Text(
-                        text = expert.bio,
-                        style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-                        color = Color.Gray
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "Contatto",
-                        color = Green1,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Text(
-                        text = expert.phoneNumber.ifEmpty { "Telefono non disponibile" },
-                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp)
-                    )
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Pulsante Contatta
-                    Button(
-                        onClick = { showDialog = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Green1),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                    ) {
-                        Text("Contatta", color = Color.White)
-                    }
-                }
-
-                // Dialog di conferma
-                if (showDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showDialog = false },
-                        title = { Text("Conferma Chiamata", fontWeight = FontWeight.Bold) },
-                        text = { Text("Vuoi chiamare ${expert.firstName} ${expert.lastName}?") },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    showDialog = false
-                                    val intent = Intent(Intent.ACTION_DIAL).apply {
-                                        data = Uri.parse("tel:${expert.phoneNumber}")
-                                    }
-                                    context.startActivity(intent)
-                                }
+                            // Immagine Profilo
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(260.dp)
+                                    .background(color = Color(0xFFE8F9ED), shape = RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.BottomCenter
                             ) {
-                                Text("CHIAMA ORA", color = Green1, fontWeight = FontWeight.Bold)
+                                Image(
+                                    painter = painterResource(id = R.drawable.placeholder_profilo),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxHeight(0.9f),
+                                    contentScale = ContentScale.Fit
+                                )
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showDialog = false }) {
-                                Text("ANNULLA", color = Color.Gray)
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Text(
+                                text = "${expert.firstName} ${expert.lastName}",
+                                style = MaterialTheme.typography.headlineMedium.copy(
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color(0xFF2C3E50),
+                                    letterSpacing = (-0.5).sp
+                                )
+                            )
+
+                            Text(
+                                text = expert.profession,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF4A9078),
+                                    fontSize = 19.sp
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = expert.bio,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    lineHeight = 26.sp,
+                                    color = Color(0xFF546E7A)
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Surface(
+                                color = Color(0xFFF1F8F4),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color(0xFF4A9078))) {
+                                            append("Focus: ")
+                                        }
+                                        append("Consulenza tecnica, risoluzione problemi e supporto all'acquisto.")
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(32.dp))
+
+                            Button(
+                                onClick = { showDialog = true },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5D705D)),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(60.dp),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                            ) {
+                                Text(
+                                    "AVVIA CONSULENZA TELEFONICA",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp,
+                                        fontSize = 14.sp
+                                    )
+                                )
                             }
                         }
-                    )
+                    }
                 }
+
+                // Spacer finale per non far toccare il fondo
+                item { Spacer(modifier = Modifier.height(16.dp)) }
             }
+        }
+
+        if (showDialog && expert != null) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Chiamata in uscita") },
+                text = { Text("Stai per contattare ${expert.firstName}. La chiamata utilizzerà il tuo piano tariffario.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDialog = false
+                        val intent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:${expert.phoneNumber}")
+                        }
+                        context.startActivity(intent)
+                    }) {
+                        Text("CHIAMA", color = Color(0xFF4A9078), fontWeight = FontWeight.ExtraBold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("ANNULLA", color = Color.Gray)
+                    }
+                }
+            )
         }
     }
 }

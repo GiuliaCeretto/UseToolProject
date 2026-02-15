@@ -29,7 +29,7 @@ fun MainScaffold(
 
     // Logica di visibilità UI
     val showBottomBar = currentRoute in mainRoutes
-    val showTopBar = currentRoute != NavRoutes.Login.route
+    val showTopBar = currentRoute != NavRoutes.Login.route && currentRoute != NavRoutes.Register.route
 
     Scaffold(
         topBar = {

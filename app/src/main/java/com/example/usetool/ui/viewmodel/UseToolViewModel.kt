@@ -44,17 +44,18 @@ class UseToolViewModel(
     fun getSlotsForLocker(lockerId: String): Flow<List<SlotEntity>> =
         inventoryRepository.getSlotsForLocker(lockerId)
 
+    // In UseToolViewModel.kt
     fun getDistanceForTool(toolId: String): Double? {
         val currentSlots = slots.value
         val currentLockers = lockers.value
 
-        val availableLockerIds = currentSlots
-            .filter { it.toolId == toolId && it.status == "DISPONIBILE" }
+        val associatedLockerIds = currentSlots
+            .filter { it.toolId == toolId }
             .map { it.lockerId }
             .toSet()
 
         return currentLockers
-            .filter { availableLockerIds.contains(it.id) }
+            .filter { associatedLockerIds.contains(it.id) }
             .minOfOrNull { calculateDistance(userLat, userLon, it.lat, it.lon) }
     }
 

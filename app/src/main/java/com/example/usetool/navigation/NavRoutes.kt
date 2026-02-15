@@ -7,6 +7,7 @@ sealed class NavRoutes(val route: String) {
     object Consulenza : NavRoutes("consulenza")
     object Profilo : NavRoutes("profilo")
     object Login : NavRoutes("login")
+    object Register : NavRoutes("register")
 
     object SchedaDistributore : NavRoutes("distributore/{id}") {
         fun createRoute(id: String) = "distributore/$id"

@@ -18,7 +18,8 @@ data class RentalEntity(
     val slotId: String,
     val dataInizio: Long,
     val dataFinePrevista: Long?,
-    val statoNoleggio: String, // "ATTIVO", "COMPLETATO", "IN_RITARDO"
+    val dataRiconsegnaEffettiva: Long?,
+    val statoNoleggio: String,
     val costoTotale: Double
 )
 

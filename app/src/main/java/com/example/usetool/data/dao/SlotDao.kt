@@ -25,6 +25,9 @@ interface SlotDao {
     @Query("SELECT * FROM slots")
     fun getAllSlots(): Flow<List<SlotEntity>>
 
+    @Query("UPDATE slots SET status = :newStatus WHERE id = :slotId")
+    suspend fun updateSlotStatus(slotId: String, newStatus: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSlots(slots: List<SlotEntity>)
 
