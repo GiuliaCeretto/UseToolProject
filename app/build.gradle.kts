@@ -48,6 +48,7 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.play.services.wallet)
+    implementation(libs.androidx.ui.graphics)
     kapt(libs.androidx.room.compiler)
 
     // --- FIREBASE (Remote Data Layer) ---
@@ -66,6 +67,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended:1.7.0")
     implementation(libs.androidx.navigation.compose)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 

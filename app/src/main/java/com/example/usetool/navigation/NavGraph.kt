@@ -58,7 +58,7 @@ fun AppNavGraph(
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
-            SchedaConsulenteScreen(navController, id, expertViewModel)
+            SchedaConsulenteScreen(id, expertViewModel)
         }
 
         composable(
@@ -78,7 +78,7 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Pagamento.route) {
-            PagamentoScreen(navController, cartViewModel)
+            PagamentoScreen(navController, cartViewModel, userViewModel = userViewModel)
         }
 
         composable(NavRoutes.Login.route) {

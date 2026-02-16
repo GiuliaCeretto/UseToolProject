@@ -6,7 +6,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +22,7 @@ import androidx.navigation.NavController
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.ui.viewmodel.CartViewModel
+import com.example.usetool.ui.viewmodel.UserViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,28 +30,27 @@ import kotlinx.coroutines.flow.collectLatest
 fun PagamentoScreen(
     navController: NavController,
     cartViewModel: CartViewModel,
+    userViewModel: UserViewModel
 ) {
-    // Osservazione dello stato del carrello e dei messaggi di errore/successo
     val cartHeader by cartViewModel.cartHeader.collectAsStateWithLifecycle()
-    val isProcessing by cartViewModel.isProcessing.collectAsStateWithLifecycle() // Stato caricamento centralizzato
+    val cartItems by cartViewModel.cartItems.collectAsStateWithLifecycle()
+    val isProcessing by cartViewModel.isProcessing.collectAsStateWithLifecycle()
     val total = cartHeader?.totaleProvvisorio ?: 0.0
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Stati locali per i campi della carta (dati fittizi per il test)
+    var showSuccessDialog by remember { mutableStateOf(false) }
     var cardNumber by remember { mutableStateOf("") }
     var expiryDate by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
     var cardHolder by remember { mutableStateOf("") }
 
-    // Gestione degli eventi di ritorno dal ViewModel (es. Successo Checkout)
+    // Ascolta i messaggi dal ViewModel per gestire il successo o gli errori di rete
     LaunchedEffect(Unit) {
         cartViewModel.errorMessage.collectLatest { message ->
-            snackbarHostState.showSnackbar(message)
-            // Se il messaggio indica successo, torniamo alla Home svuotando lo stack
             if (message.contains("successo", ignoreCase = true)) {
-                navController.navigate(NavRoutes.Home.route) {
-                    popUpTo(NavRoutes.Home.route) { inclusive = true }
-                }
+                showSuccessDialog = true
+            } else {
+                snackbarHostState.showSnackbar(message)
             }
         }
     }
@@ -77,7 +76,7 @@ fun PagamentoScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp)
         ) {
-            // --- BOX RIEPILOGO TOTALE ---
+            // --- RIEPILOGO TOTALE ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = BluePrimary),
@@ -95,16 +94,32 @@ fun PagamentoScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- LISTA ARTICOLI NEL CARRELLO ---
+            Text("Riepilogo Ordine", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
+            Spacer(modifier = Modifier.height(12.dp))
+
+            cartItems.forEach { item ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(item.toolName, color = Color.Gray, fontSize = 14.sp)
+                    Text("€ ${"%.2f".format(item.price)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.LightGray.copy(alpha = 0.5f))
+
+            // --- FORM DATI CARTA ---
             Text("Dettagli Carta", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo Numero Carta
             OutlinedTextField(
                 value = cardNumber,
                 onValueChange = { if (it.length <= 16) cardNumber = it },
                 label = { Text("Numero Carta") },
-                //leadingIcon = { Icon(Icons.Default.CreditCard, contentDescription = null, tint = BluePrimary) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 visualTransformation = CreditCardTransformation(),
@@ -114,7 +129,6 @@ fun PagamentoScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Campo Titolare
             OutlinedTextField(
                 value = cardHolder,
                 onValueChange = { cardHolder = it },
@@ -127,7 +141,6 @@ fun PagamentoScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Riga Scadenza e CVV
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = expiryDate,
@@ -150,40 +163,23 @@ fun PagamentoScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Footer Sicurezza
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFF4CAF50), modifier = Modifier.size(14.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Pagamento criptato e sicuro", color = Color.Gray, fontSize = 12.sp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- BOTTONE DI CONFERMA FINALE ---
+            // --- BOTTONE DI AZIONE ---
             Button(
                 onClick = {
-                    // Avvia la logica di checkout nel ViewModel
-                    cartViewModel.performCheckout(onSuccess = {
-                        // Navigazione gestita anche dal LaunchedEffect per sicurezza
+                    // Avvia il processo di checkout che aggiorna stock e stati sul DB
+                    cartViewModel.performCheckout(onSuccess = { rentalIds ->
+                        // Per i noleggi, attiva i timer di gestione
+                        rentalIds.forEach { id ->
+                            userViewModel.startRental(id)
+                        }
                     })
                 },
-                // Abilitato solo se i campi sono compilati (logica fittizia) e non sta processando
                 enabled = cardNumber.length >= 16 && cvv.length >= 3 && cardHolder.isNotBlank() && !isProcessing,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFC107), // Colore Giallo coordinato
-                    contentColor = Color.Black
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107), contentColor = Color.Black)
             ) {
                 if (isProcessing) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black, strokeWidth = 2.dp)
@@ -192,12 +188,34 @@ fun PagamentoScreen(
                 }
             }
         }
+
+        // --- DIALOG DI CONFERMA FINALE ---
+        if (showSuccessDialog) {
+            AlertDialog(
+                onDismissRequest = { },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showSuccessDialog = false
+                            navController.navigate(NavRoutes.Home.route) {
+                                popUpTo(NavRoutes.Home.route) { inclusive = true }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
+                    ) {
+                        Text("TORNA ALLA HOME", color = Color.White)
+                    }
+                },
+                title = { Text("Pagamento Completato", fontWeight = FontWeight.Bold) },
+                text = { Text("Il tuo pagamento è andato a buon fine. Gli strumenti acquistati sono ora pronti per il ritiro e i noleggi sono stati attivati.") },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = Color.White
+            )
+        }
     }
 }
 
-/**
- * Formattatore visivo per il numero della carta (aggiunge spazi ogni 4 cifre)
- */
+// Formattatore per il numero della carta (aggiunge spazi ogni 4 cifre)
 class CreditCardTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val trimmed = if (text.text.length >= 16) text.text.substring(0..15) else text.text

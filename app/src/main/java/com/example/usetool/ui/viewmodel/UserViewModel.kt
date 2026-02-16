@@ -1,5 +1,6 @@
 package com.example.usetool.ui.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.usetool.data.dao.PurchaseEntity
@@ -25,57 +26,99 @@ class UserViewModel(
     private val _errorMessage = MutableSharedFlow<String>()
     val errorMessage = _errorMessage.asSharedFlow()
 
-    // --- DATI CARICATI PIGRAMENTE (LAZILY) ---
+    // --- DATI REATTIVI (ROOM) ---
+    // Usiamo WhileSubscribed(5000) per mantenere il flusso attivo durante le rotazioni o piccoli cambi di schermo
 
-    val userProfile: StateFlow<UserEntity?> by lazy {
-        userRepository.userProfile
-            .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val userProfile: StateFlow<UserEntity?> = userRepository.userProfile
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val purchases: StateFlow<List<PurchaseEntity>> = orderRepository.localPurchases
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val rentals: StateFlow<List<RentalEntity>> = orderRepository.localRentals
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // --- FLOWS FILTRATI ---
+
+    val activeRentals: StateFlow<List<RentalEntity>> = rentals
+        .map { list -> list.filter { it.statoNoleggio == "ATTIVO" } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val purchaseCount: StateFlow<Int> = purchases
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    val rentalCount: StateFlow<Int> = rentals
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    init {
+        // 🔥 FIX: Verifica se l'utente è già loggato all'avvio del ViewModel
+        // Se l'utente ha una sessione attiva, avviamo subito la sincronizzazione.
+        FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+            syncUserData(uid)
+        }
     }
 
-    val purchases: StateFlow<List<PurchaseEntity>> by lazy {
-        orderRepository.localPurchases
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    // --- LOGICA DI AUTENTICAZIONE ---
+
+    fun login(email: String, pass: String) {
+        if (email.isBlank() || pass.isBlank()) {
+            _loginState.value = LoginResult.Error("Inserisci email e password")
+            return
+        }
+
+        viewModelScope.launch {
+            _loginState.value = LoginResult.Loading
+            try {
+                userRepository.loginWithFirebase(email, pass).fold(
+                    onSuccess = { handleAuthResult() },
+                    onFailure = { e ->
+                        _loginState.value = LoginResult.Error(e.localizedMessage ?: "Credenziali errate")
+                    }
+                )
+            } catch (e: Exception) {
+                _loginState.value = LoginResult.Error("Errore di rete")
+            }
+        }
     }
 
-    val rentals: StateFlow<List<RentalEntity>> by lazy {
-        orderRepository.localRentals
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    private fun handleAuthResult() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        if (userId != null) {
+            syncUserData(userId)
+            _loginState.value = LoginResult.SuccessLogin
+        } else {
+            _loginState.value = LoginResult.Error("Utente non trovato")
+        }
     }
+
+    fun register(nome: String, cognome: String, email: String, telefono: String, indirizzo: String, pass: String) {
+        viewModelScope.launch {
+            _loginState.value = LoginResult.Loading
+            userRepository.registerWithFirebase(nome, cognome, email, telefono, indirizzo, pass).fold(
+                onSuccess = { _loginState.value = LoginResult.SuccessRegister },
+                onFailure = { e -> _loginState.value = LoginResult.Error(e.localizedMessage ?: "Errore") }
+            )
+        }
+    }
+
+    // --- SINCRONIZZAZIONE ---
 
     private fun syncUserData(userId: String) {
         viewModelScope.launch {
-            // Chiama le funzioni del repository che prima risultavano "unused"
-            userRepository.syncProfile(userId)
-            orderRepository.syncUserOrders(userId)
-        }
-    }
-
-    fun updateUserData(nome: String, cognome: String, telefono: String, indirizzo: String) {
-        val currentProfile = userProfile.value ?: return
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val updatedUser = currentProfile.copy(nome = nome, cognome = cognome, telefono = telefono, indirizzo = indirizzo)
-
-        viewModelScope.launch {
             try {
-                userRepository.updateProfile(userId, updatedUser)
-            } catch (_: Exception) {
-                // CORRETTO: Emette errore su SharedFlow senza resettare il login
-                _errorMessage.emit("Errore durante l'aggiornamento del profilo")
-            }
-        }
-    }
-
-    // Aggiungi queste funzioni in UserViewModel.kt
-    fun confirmPickup(purchaseId: String) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        viewModelScope.launch {
-            try {
-                orderRepository.confirmPurchasePickup(uid, purchaseId)
+                // Avviamo i processi di sync nel Repository
+                userRepository.syncProfile(userId)
+                orderRepository.syncUserOrders(userId)
+                Log.d("UserViewModel", "Sincronizzazione ordini avviata per: $userId")
             } catch (e: Exception) {
-                _errorMessage.emit("Errore nel confermare il ritiro")
+                Log.e("UserViewModel", "Errore sync: ${e.message}")
             }
         }
     }
+
+    // --- AZIONI ORDINI ---
 
     fun startRental(rentalId: String) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -83,7 +126,7 @@ class UserViewModel(
             try {
                 orderRepository.confirmStartRental(uid, rentalId)
             } catch (e: Exception) {
-                _errorMessage.emit("Errore nell'avvio del noleggio")
+                _errorMessage.emit("Errore avvio noleggio")
             }
         }
     }
@@ -94,37 +137,40 @@ class UserViewModel(
             try {
                 orderRepository.confirmEndRental(uid, rentalId, slotId)
             } catch (e: Exception) {
-                _errorMessage.emit("Errore nella riconsegna")
+                _errorMessage.emit("Errore riconsegna")
             }
         }
     }
 
-    // --- LOGICA DI LOGIN E SINCRONIZZAZIONE ---
-
-    fun login(email: String, pass: String) {
-        if (email.isBlank() || pass.isBlank()) {
-            _loginState.value = LoginResult.Error("Inserisci email e password")
-            return
-        }
-
+    fun confirmPickup(purchaseId: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         viewModelScope.launch {
-            _loginState.value = LoginResult.Loading
-
-            val result = userRepository.loginWithFirebase(email, pass)
-
-            result.onSuccess {
-                // Dopo il login, recuperiamo l'UID per far partire la sincronizzazione
-                val userId = FirebaseAuth.getInstance().currentUser?.uid
-                if (userId != null) {
-                    // RISOLTO: Avviamo la sincronizzazione di profilo e ordini
-                    syncUserData(userId)
-                    _loginState.value = LoginResult.Success
-                } else {
-                    _loginState.value = LoginResult.Error("Errore nel recupero ID utente")
-                }
-            }.onFailure { exception ->
-                _loginState.value = LoginResult.Error(exception.message ?: "Errore di autenticazione")
+            try {
+                orderRepository.confirmPurchasePickup(uid, purchaseId)
+            } catch (e: Exception) {
+                _errorMessage.emit("Errore ritiro")
             }
+        }
+    }
+
+    // --- PROFILO E LOGOUT ---
+
+    fun updateUserData(nome: String, cognome: String, telefono: String, indirizzo: String) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val updatedUser = UserEntity(userId, FirebaseAuth.getInstance().currentUser?.email ?: "", nome, cognome, telefono, indirizzo)
+        viewModelScope.launch {
+            try {
+                userRepository.updateProfile(userId, updatedUser)
+            } catch (e: Exception) {
+                _errorMessage.emit("Errore aggiornamento profilo")
+            }
+        }
+    }
+
+    fun triggerError(message: String) {
+        _loginState.value = LoginResult.Error(message)
+        viewModelScope.launch {
+            _errorMessage.emit(message)
         }
     }
 
@@ -137,12 +183,13 @@ class UserViewModel(
         }
     }
 
-
+    fun resetState() { _loginState.value = LoginResult.Idle }
 }
 
 sealed class LoginResult {
     object Idle : LoginResult()
     object Loading : LoginResult()
-    object Success : LoginResult()
+    object SuccessLogin : LoginResult()
+    object SuccessRegister : LoginResult()
     data class Error(val message: String) : LoginResult()
 }

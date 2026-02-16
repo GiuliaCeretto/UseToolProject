@@ -13,8 +13,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,7 +41,10 @@ fun HomeScreen(
 ) {
     val tools by vm.topTools.collectAsStateWithLifecycle()
     val lockers by vm.lockers.collectAsStateWithLifecycle()
+    // Recuperiamo la lista reale dei preferiti dal ViewModel
+    val favoriteTools by vm.favoriteTools.collectAsStateWithLifecycle()
 
+    val density = LocalDensity.current
     val snackbarHostState = remember { SnackbarHostState() }
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -53,16 +58,15 @@ fun HomeScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = padding.calculateTopPadding() + 16.dp,
+                bottom = padding.calculateBottomPadding() + 16.dp,
+                start = 16.dp,
+                end = 16.dp
+            ),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // --- BOX NOLEGGIO STILE POP-UP ---
-            // (Rimane invariato come nel tuo codice fornito)
-
-            // --- SWITCHER A 3 OPZIONI ---
             item {
                 HomeSwitcher(
                     selectedTab = selectedTab,
@@ -70,16 +74,23 @@ fun HomeScreen(
                 )
             }
 
-            // --- CONTENUTO TAB ---
             item {
                 when (selectedTab) {
                     0 -> ToolRow(tools, navController) // Popolari
-                    1 -> FavoriteToolsSection() // NUOVA: Sezione Preferiti
+                    1 -> {
+                        // LOGICA AGGIORNATA: Se la lista è vuota mostra il placeholder,
+                        // altrimenti mostra i preferiti reali
+                        if (favoriteTools.isEmpty()) {
+                            FavoriteToolsSection()
+                        } else {
+                            ToolRow(favoriteTools, navController)
+                        }
+                    }
                     2 -> LockerRow(lockers, vm, navController) // Vicini a te
                 }
             }
 
-            // --- MAPPA (Mostrata solo se NON siamo nei Preferiti) ---
+            // Mappa visibile solo se non siamo nella tab preferiti
             if (selectedTab != 1) {
                 item {
                     Text(
@@ -100,17 +111,30 @@ fun HomeScreen(
                                 modifier = Modifier.fillMaxSize()
                             )
 
-                            lockers.forEach { locker ->
-                                // Placeholder posizionamento basato su coordinate reali
-                                val xPos = (40 + (locker.lon % 1.0) * 1000).dp
-                                val yPos = (60 + (locker.lat % 1.0) * 1000).dp
+                            val userPos = Offset(350f, 750f)
+                            val lockerPos = Offset(650f, 450f)
 
+                            Image(
+                                painter = painterResource(id = R.drawable.pin),
+                                contentDescription = "La tua posizione",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .offset(
+                                        x = with(density) { userPos.x.toDp() - 16.dp },
+                                        y = with(density) { userPos.y.toDp() - 32.dp }
+                                    )
+                            )
+
+                            lockers.forEach { locker ->
                                 Image(
                                     painter = painterResource(id = R.drawable.pin),
-                                    contentDescription = null,
+                                    contentDescription = locker.name,
                                     modifier = Modifier
-                                        .size(32.dp)
-                                        .offset(x = xPos.coerceIn(0.dp, 300.dp), y = yPos.coerceIn(0.dp, 200.dp))
+                                        .size(40.dp)
+                                        .offset(
+                                            x = with(density) { lockerPos.x.toDp() - 20.dp },
+                                            y = with(density) { lockerPos.y.toDp() - 40.dp }
+                                        )
                                         .clickable {
                                             navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
                                         }
@@ -176,10 +200,9 @@ fun LockerRow(lockers: List<LockerEntity>, vm: UseToolViewModel, navController: 
         contentPadding = PaddingValues(horizontal = 4.dp)
     ) {
         items(lockers.take(5)) { locker ->
-            // Se vuoi lo stile identico a ToolCardSmall, assicurati che LockerCardSmall
-            // sia definita con la stessa elevazione e forma della card strumenti
             LockerCardSmall(
                 locker = locker,
+                address = locker.address, // Passiamo la via
                 distanceKm = vm.getDistanceToLocker(locker),
                 onClick = {
                     navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
@@ -188,7 +211,6 @@ fun LockerRow(lockers: List<LockerEntity>, vm: UseToolViewModel, navController: 
         }
     }
 }
-
 @Composable
 fun FavoriteToolsSection() {
     // Nota: In un'app reale filtreresti i 'tools' in base a un flag isFavorite o una lista di ID.

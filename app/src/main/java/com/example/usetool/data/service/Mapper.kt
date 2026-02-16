@@ -3,7 +3,7 @@ package com.example.usetool.data.service
 import com.example.usetool.data.dto.*
 import com.example.usetool.data.dao.*
 
-// --- TOOL ---
+// --- TOOL (Anagrafica Strumento) ---
 fun ToolDTO.toEntity(): ToolEntity = ToolEntity(
     id = id,
     name = name,
@@ -12,10 +12,9 @@ fun ToolDTO.toEntity(): ToolEntity = ToolEntity(
     type = type,
     category = category,
     imageResName = imageResName,
-    imageUrl = imageUrl, // AGGIUNTO: Allineato con ToolDTO e ToolDao
+    imageUrl = imageUrl,
     videoUrl = videoUrl,
-    pdfUrls = pdfUrls,   // AGGIUNTO: Gestito dal Converter in Room
-    quantity = quantity
+    pdfUrls = pdfUrls
 )
 
 fun ToolEntity.toDto(): ToolDTO = ToolDTO(
@@ -26,20 +25,20 @@ fun ToolEntity.toDto(): ToolDTO = ToolDTO(
     type = this.type,
     category = this.category,
     imageResName = this.imageResName,
-    imageUrl = this.imageUrl, // AGGIUNTO
+    imageUrl = this.imageUrl,
     videoUrl = this.videoUrl,
-    pdfUrls = this.pdfUrls,   // AGGIUNTO
-    quantity = this.quantity
+    pdfUrls = this.pdfUrls
 )
 
 fun List<ToolDTO>.toToolEntityList(): List<ToolEntity> = this.map { it.toEntity() }
 
-// --- SLOT ---
+// --- SLOT (Disponibilità Fisica nel Locker) ---
 fun SlotDTO.toEntity(): SlotEntity = SlotEntity(
     id = id,
     lockerId = lockerId,
     toolId = toolId,
     status = status,
+    isFavorite = isFavorite,
     quantity = quantity
 )
 
@@ -65,7 +64,7 @@ fun LockerDTO.toEntity(): LockerEntity = LockerEntity(
     saleSlotsCount = saleSlotsCount,
     rentalSlotsCount = rentalSlotsCount,
     macAddress = macAddress,
-    toolIds = toolIds // AGGIUNTO: Gestito dal Converter in Room
+    toolIds = toolIds
 )
 
 fun List<LockerDTO>.toLockerEntityList(): List<LockerEntity> = this.map { it.toEntity() }
@@ -77,6 +76,7 @@ fun ExpertDTO.toEntity(): ExpertEntity = ExpertEntity(
     lastName = lastName,
     profession = profession,
     bio = bio,
+    focus = focus,
     phoneNumber = phoneNumber,
     imageUrl = imageUrl
 )
@@ -85,7 +85,7 @@ fun List<ExpertDTO>.toExpertEntityList(): List<ExpertEntity> = this.map { it.toE
 
 // --- USER ---
 fun UserDTO.toEntity(): UserEntity = UserEntity(
-    uid = id ?: "", // Usa l'id del DTO (che è l'UID di Firebase)
+    uid = id ?: "",
     email = email ?: "",
     nome = nome ?: "",
     cognome = cognome ?: "",
@@ -102,11 +102,11 @@ fun UserEntity.toDto(): UserDTO = UserDTO(
     indirizzo = this.indirizzo
 )
 
-// --- PURCHASE ---
+// --- PURCHASE (Acquisto) ---
 fun PurchaseDTO.toEntity(): PurchaseEntity = PurchaseEntity(
     id = id ?: "",
     userId = userId ?: "",
-    cartId = cartId ?: "", // AGGIUNTO: Allineato con PurchaseDTO aggiornato
+    cartId = cartId ?: "",
     toolId = toolId ?: "",
     toolName = toolName ?: "",
     prezzoPagato = prezzoPagato,
@@ -115,24 +115,57 @@ fun PurchaseDTO.toEntity(): PurchaseEntity = PurchaseEntity(
     slotId = slotId ?: "",
     dataRitiro = dataRitiro ?: 0L,
     dataRitiroEffettiva = dataRitiroEffettiva,
-    idTransazionePagamento = idTransazionePagamento // AGGIUNTO: Allineato con PurchaseEntity
+    idTransazionePagamento = idTransazionePagamento
+)
+
+fun PurchaseEntity.toFirebaseMap(): Map<String, Any?> = mapOf(
+    "id" to id,
+    "userId" to userId,
+    "cartId" to cartId,
+    "toolId" to toolId,
+    "toolName" to toolName,
+    "prezzoPagato" to prezzoPagato,
+    "dataAcquisto" to dataAcquisto,
+    "dataRitiro" to dataRitiro,
+    "dataRitiroEffettiva" to dataRitiroEffettiva,
+    "lockerId" to lockerId,
+    "slotId" to slotId,
+    "idTransazionePagamento" to idTransazionePagamento
 )
 
 fun List<PurchaseDTO>.toPurchaseEntityList(): List<PurchaseEntity> = this.map { it.toEntity() }
 
-// --- RENTAL ---
+// --- RENTAL (Noleggio) ---
+/**
+ * 🔥 CORRETTO: Aggiunta gestione valori di default per evitare crash in Room
+ * durante la lettura da Firebase (noleggi "null" o incompleti).
+ */
 fun RentalDTO.toEntity(): RentalEntity = RentalEntity(
     id = id ?: "",
     userId = userId ?: "",
     toolId = toolId ?: "",
-    toolName = toolName ?: "",
+    toolName = toolName ?: "Strumento",
     lockerId = lockerId ?: "",
     slotId = slotId ?: "",
     dataInizio = dataInizio,
     dataFinePrevista = dataFinePrevista,
     dataRiconsegnaEffettiva = dataRiconsegnaEffettiva,
-    statoNoleggio = statoNoleggio,
+    statoNoleggio = statoNoleggio ?: "ATTIVO",
     costoTotale = costoTotale
+)
+
+fun RentalEntity.toFirebaseMap(): Map<String, Any?> = mapOf(
+    "id" to id,
+    "userId" to userId,
+    "toolId" to toolId,
+    "toolName" to toolName,
+    "lockerId" to lockerId,
+    "slotId" to slotId,
+    "dataInizio" to dataInizio,
+    "dataFinePrevista" to dataFinePrevista,
+    "dataRiconsegnaEffettiva" to dataRiconsegnaEffettiva,
+    "statoNoleggio" to statoNoleggio,
+    "costoTotale" to costoTotale
 )
 
 fun List<RentalDTO>.toRentalEntityList(): List<RentalEntity> = this.map { it.toEntity() }
@@ -141,7 +174,7 @@ fun List<RentalDTO>.toRentalEntityList(): List<RentalEntity> = this.map { it.toE
 fun CartDTO.toEntity(): CartEntity = CartEntity(
     id = id ?: "",
     userId = userId ?: "",
-    status = status,
+    status = status ?: "PENDING",
     totaleProvvisorio = totaleProvvisorio,
     ultimoAggiornamento = ultimoAggiornamento
 )

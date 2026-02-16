@@ -1,15 +1,20 @@
 package com.example.usetool.data.repository
 
+import android.util.Log
 import com.example.usetool.data.dto.*
 import com.example.usetool.data.dao.*
 import com.example.usetool.data.network.DataSource
 import com.example.usetool.data.service.toPurchaseEntityList
 import com.example.usetool.data.service.toRentalEntityList
+import com.example.usetool.data.service.toFirebaseMap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import java.util.UUID
 
 class OrderRepository(
     private val dataSource: DataSource,
@@ -20,17 +25,16 @@ class OrderRepository(
     private val cartRepository: CartRepository,
     private val slotDao: SlotDao
 ) {
+    // Flow reattivi per la UI
     val localPurchases: Flow<List<PurchaseEntity>> = purchaseDao.getAll()
     val localRentals: Flow<List<RentalEntity>> = rentalDao.getAllRentals()
 
     /**
-     * Sincronizza lo storico ordini.
-     * NOTA: Utilizziamo coroutineScope per evitare che collectLatest blocchi l'esecuzione.
+     * Sincronizzazione automatica da Firebase a Room.
      */
     suspend fun syncUserOrders(userId: String) = coroutineScope {
         launch {
             dataSource.observePurchases(userId).collectLatest { list ->
-                // Usa insertAll che gestisce REPLACE, ma assicurati di non svuotare
                 if (list.isNotEmpty()) {
                     purchaseDao.insertAll(list.toPurchaseEntityList())
                 }
@@ -44,98 +48,104 @@ class OrderRepository(
             }
         }
     }
+
     /**
-     * Checkout: Trasforma gli item del carrello in oggetti Noleggio o Acquisto.
+     * Esegue il checkout trasformando il carrello in ordini reali.
+     * Determina il tipo di transazione (Noleggio vs Vendita) basandosi sul catalogo strumenti.
      */
-    suspend fun processCheckout(userId: String, cart: CartEntity) {
+    suspend fun processCheckout(userId: String, cart: CartEntity, items: List<CartItemEntity>): List<String> = withContext(Dispatchers.IO) {
         val updates = mutableMapOf<String, Any?>()
+        val rentalIds = mutableListOf<String>()
         val now = System.currentTimeMillis()
 
-        val items = cartDao.getItemsByCartId(cart.id).firstOrNull()
-            ?: throw IllegalStateException("Carrello vuoto")
+        val rentalsToInsert = mutableListOf<RentalEntity>()
+        val purchasesToInsert = mutableListOf<PurchaseEntity>()
 
-        val toolsList = toolDao.getAllTools().firstOrNull() ?: emptyList()
-        val slotsList = slotDao.getAllSlots().firstOrNull() ?: emptyList()
+        // 🔥 RECUPERO TIPO DAL TOOL DAO:
+        // Carichiamo lo snapshot di tutti i tool per mappare i tipi correttamente
+        val toolsCatalog = toolDao.getAllTools().first().associateBy { it.id }
 
         items.forEach { item ->
-            val tool = toolsList.find { it.id == item.toolId } ?: return@forEach
-            val slot = slotsList.find { it.id == item.slotId } ?: return@forEach
+            val orderId = UUID.randomUUID().toString()
+            val costoEffettivo = item.price * item.quantity
 
-            if (tool.type == "acquisto") {
-                // LOGICA ACQUISTO
-                val pKey = "p_${now}_${item.slotId}"
-                updates["purchases/$userId/$pKey"] = PurchaseDTO(
-                    id = pKey,
+            // Recuperiamo l'anagrafica dello strumento dal catalogo
+            val toolInfo = toolsCatalog[item.toolId]
+
+            // Verifichiamo il tipo definito nell'anagrafica ToolEntity
+            val isRental = toolInfo?.type?.contains("rent", ignoreCase = true) == true ||
+                    toolInfo?.type?.contains("noleggio", ignoreCase = true) == true
+
+            if (isRental) {
+                // --- CREAZIONE NOLEGGIO ---
+                val rental = RentalEntity(
+                    id = orderId,
                     userId = userId,
-                    toolId = tool.id,
-                    toolName = tool.name,
-                    prezzoPagato = item.price,
-                    dataAcquisto = now,
-                    dataRitiro = 0L,
-                    lockerId = slot.lockerId,
-                    slotId = slot.id
-                )
-
-                // Scarico quantità reattivo
-                val newQty = (slot.quantity - 1).coerceAtLeast(0)
-                updates["slots/${slot.id}/quantity"] = newQty
-                updates["slots/${slot.id}/status"] = if (newQty <= 0) "VUOTO" else "DISPONIBILE"
-
-                // Aggiornamento locale immediato per la UI
-                slotDao.updateSlotStatus(slot.id, if (newQty <= 0) "VUOTO" else "DISPONIBILE")
-
-            } else {
-                // LOGICA NOLEGGIO
-                val rKey = "r_${now}_${item.slotId}"
-                updates["rentals/$userId/$rKey"] = RentalDTO(
-                    id = rKey,
-                    userId = userId,
-                    toolId = tool.id,
-                    toolName = tool.name,
+                    toolId = item.toolId,
+                    toolName = item.toolName,
+                    lockerId = item.lockerId,
                     slotId = item.slotId,
-                    lockerId = slot.lockerId,
-                    dataInizio = 0L,
-                    dataFinePrevista = 0L,
-                    statoNoleggio = "PRENOTATO",
-                    costoTotale = item.price
+                    dataInizio = now,
+                    dataFinePrevista = now + 86400000, // +24 ore
+                    dataRiconsegnaEffettiva = null,
+                    statoNoleggio = "ATTIVO",
+                    costoTotale = costoEffettivo
                 )
-                updates["slots/${item.slotId}/status"] = "NOLEGGIATO"
+                rentalsToInsert.add(rental)
+                rentalIds.add(orderId)
 
-                // Aggiornamento locale immediato per la UI
-                slotDao.updateSlotStatus(item.slotId, "NOLEGGIATO")
+                updates["rentals/$userId/$orderId"] = rental.toFirebaseMap()
+                updates["slots/${item.slotId}/status"] = "PRENOTATO"
+                updates["slots/${item.slotId}/quantity"] = item.quantity
+
+                slotDao.updateSlotStatus(item.slotId, "PRENOTATO")
+            } else {
+                // --- CREAZIONE ACQUISTO ---
+                val purchase = PurchaseEntity(
+                    id = orderId,
+                    userId = userId,
+                    cartId = cart.id,
+                    toolId = item.toolId,
+                    toolName = item.toolName,
+                    prezzoPagato = costoEffettivo,
+                    dataAcquisto = now,
+                    dataRitiro = now + 3600000,
+                    dataRitiroEffettiva = null,
+                    lockerId = item.lockerId,
+                    slotId = item.slotId,
+                    idTransazionePagamento = "TX-$now"
+                )
+                purchasesToInsert.add(purchase)
+
+                updates["purchases/$userId/$orderId"] = purchase.toFirebaseMap()
+                updates["slots/${item.slotId}/status"] = "NON_DISPONIBILE"
+                updates["slots/${item.slotId}/quantity"] = 0
+
+                slotDao.updateSlotStock(item.slotId, "NON_DISPONIBILE", 0)
             }
         }
 
-        // Pagamento
-        val payKey = "pay_${now}"
-        updates["payments/$userId/$payKey"] = mapOf(
-            "id_carrello" to cart.id,
-            "totale" to cart.totaleProvvisorio,
-            "stato" to "CONFERMATO",
-            "timestamp" to now
-        )
+        // --- SALVATAGGIO ROOM ---
+        if (rentalsToInsert.isNotEmpty()) rentalDao.insertRentals(rentalsToInsert)
+        if (purchasesToInsert.isNotEmpty()) purchaseDao.insertAll(purchasesToInsert)
 
-        // Reset carrello su Firebase
-        updates["carts/$userId"] = CartDTO(userId = userId, id = "cart_$userId", status = "CONFERMATO")
-
-        // Push atomico su Firebase
+        // --- SALVATAGGIO FIREBASE ---
+        updates["carts/$userId"] = null // Svuota il carrello remoto
         dataSource.updateMultipleNodes(updates)
 
-        // Pulizia locale
-        cartRepository.clearLocalCart(cart.id)
+        // --- PULIZIA FINALE ---
+        cartDao.deleteItemsByCartId(cart.id)
+
+        rentalIds
     }
 
-    /**
-     * Conferma il ritiro (Apertura cassetto per acquisto)
-     */
+    // --- FUNZIONI DI CONFERMA E STATO ---
+
     suspend fun confirmPurchasePickup(userId: String, purchaseId: String) {
-        val updates = mapOf("purchases/$userId/$purchaseId/dataRitiro" to System.currentTimeMillis())
+        val updates = mapOf("purchases/$userId/$purchaseId/dataRitiroEffettiva" to System.currentTimeMillis())
         dataSource.updateMultipleNodes(updates)
     }
 
-    /**
-     * Conferma inizio noleggio (Apertura cassetto)
-     */
     suspend fun confirmStartRental(userId: String, rentalId: String) {
         val updates = mapOf(
             "rentals/$userId/$rentalId/dataInizio" to System.currentTimeMillis(),
@@ -144,21 +154,24 @@ class OrderRepository(
         dataSource.updateMultipleNodes(updates)
     }
 
-    /**
-     * Conferma riconsegna (Chiusura cassetto e liberazione slot)
-     */
     suspend fun confirmEndRental(userId: String, rentalId: String, slotId: String) {
+        val now = System.currentTimeMillis()
         val updates = mapOf(
-            "rentals/$userId/$rentalId/dataFineEffettiva" to System.currentTimeMillis(),
+            "rentals/$userId/$rentalId/dataRiconsegnaEffettiva" to now,
             "rentals/$userId/$rentalId/statoNoleggio" to "CONCLUSO",
-            "slots/$slotId/status" to "DISPONIBILE"
+            "slots/$slotId/status" to "DISPONIBILE",
+            "slots/$slotId/quantity" to 1
         )
         dataSource.updateMultipleNodes(updates)
-        slotDao.updateSlotStatus(slotId, "DISPONIBILE")
+        slotDao.updateSlotStock(slotId, "DISPONIBILE", 1)
     }
 
     suspend fun clearOrderHistory() {
         rentalDao.clearAll()
         purchaseDao.clearAll()
+    }
+
+    suspend fun saveLocalRental(rental: RentalEntity) {
+        rentalDao.insertRentals(listOf(rental))
     }
 }

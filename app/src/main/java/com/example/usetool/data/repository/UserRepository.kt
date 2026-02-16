@@ -52,4 +52,42 @@ class UserRepository(
         dataSource.updateMultipleNodes(updates)
         userDao.saveProfile(updatedUser)
     }
+
+    /* UserRepository.kt */
+    suspend fun registerWithFirebase(
+        nome: String,
+        cognome: String,
+        email: String,
+        telefono: String,
+        indirizzo: String,
+        pass: String
+    ): Result<Unit> {
+        return try {
+            // 1. Creazione account su Firebase Auth
+            val authResult = firebaseAuth.createUserWithEmailAndPassword(email, pass).await()
+            val firebaseUid = authResult.user?.uid ?: throw Exception("ID utente non generato")
+
+            // 2. Creazione dell'entità
+            val newUser = UserEntity(
+                uid = firebaseUid,
+                nome = nome,
+                cognome = cognome,
+                telefono = telefono,
+                indirizzo = indirizzo,
+                email = email
+            )
+
+            // 3. Salvataggio remoto
+            // Importante: updateProfile invia i dati al database.
+            // Se questo fallisce, l'utente Auth esiste ma il profilo no.
+            updateProfile(firebaseUid, newUser)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            // Se fallisce la scrittura sul DB, potresti voler eliminare l'utente Auth appena creato
+            // per permettere di riprovare con la stessa email.
+            firebaseAuth.currentUser?.delete()?.await()
+            Result.failure(e)
+        }
+    }
 }

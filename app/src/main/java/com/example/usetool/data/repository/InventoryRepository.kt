@@ -14,57 +14,83 @@ class InventoryRepository(
     private val lockerDao: LockerDao,
     private val cartDao: CartDao
 ) {
-    // Esposizione dei dati da Room
+    // Flussi reattivi per osservare i dati direttamente dal database Room locale
     val allLockers: Flow<List<LockerEntity>> = lockerDao.getAll()
     val allTools: Flow<List<ToolEntity>> = toolDao.getAllTools()
     val allSlots: Flow<List<SlotEntity>> = slotDao.getAllSlots()
 
-    // Metodo mancante per recuperare gli slot di un locker specifico
+    // Espone il flusso degli slot contrassegnati come preferiti localmente
+    val favoriteSlots: Flow<List<SlotEntity>> = slotDao.getFavoriteSlots()
+
+    /**
+     * Recupera gli slot associati a un distributore specifico.
+     */
     fun getSlotsForLocker(lockerId: String): Flow<List<SlotEntity>> =
         slotDao.getSlotsByLocker(lockerId)
 
     /**
-     * Sincronizza l'intero inventario dal Network a Room.
-     * Implementa lo "Scudo" per non sovrascrivere gli articoli nel carrello.
+     * Gestisce il flag 'isFavorite' in Room senza coinvolgere il database remoto.
+     */
+    suspend fun toggleSlotFavorite(slotId: String, isFavorite: Boolean) {
+        slotDao.toggleFavorite(slotId, isFavorite)
+    }
+
+    /**
+     * Sincronizza l'inventario globale preservando i dati locali (Shield logic).
+     * I dati salvati sul database locale vengono scritti per primi per garantire reattività.
      */
     suspend fun syncFromNetwork() = coroutineScope {
-        // 1. Sync Strumenti
+        // 1. Sync Strumenti (Catalogo generale)
         launch {
             dataSource.observeTools().collectLatest { tools ->
-                if (tools.isNotEmpty()) toolDao.insertTools(tools.toToolEntityList())
+                if (tools.isNotEmpty()) {
+                    toolDao.insertTools(tools.toToolEntityList())
+                }
             }
         }
 
-        // 2. Sync Slot con SCUDO ANTI-SOVRASCRITTURA
+        // 2. Sync Slot con logica di protezione (Shield) per stato carrello e preferiti
         launch {
             dataSource.observeSlots().collectLatest { remoteSlots ->
                 if (remoteSlots.isNotEmpty()) {
-                    // Recuperiamo gli ID degli slot attualmente nel carrello locale
+                    // Recuperiamo gli item attualmente nel carrello locale per proteggerne lo stato
                     val itemsInCart = cartDao.getAllCartItemsSnapshot()
                     val idsInCart = itemsInCart.map { it.slotId }.toSet()
 
+                    // Recuperiamo gli slot locali per preservare le preferenze dell'utente
+                    val localSlots = slotDao.getAllSlots().firstOrNull() ?: emptyList()
+                    val favoriteIds = localSlots.filter { it.isFavorite }.map { it.id }.toSet()
+
                     val entities = remoteSlots.toSlotEntityList().map { slot ->
-                        // Se lo slot è nel carrello, forziamo lo stato locale "IN_CARRELLO"
-                        // ignorando il "DISPONIBILE" che arriva dal server (non ancora aggiornato)
-                        if (idsInCart.contains(slot.id)) {
-                            slot.copy(status = "IN_CARRELLO")
-                        } else {
-                            slot
-                        }
+                        val inCart = idsInCart.contains(slot.id)
+                        val isFav = favoriteIds.contains(slot.id)
+
+                        slot.copy(
+                            // Se lo slot è nel carrello locale, forziamo lo stato corretto ignorando il network
+                            status = if (inCart) "IN_CARRELLO" else slot.status,
+                            // Preserviamo sempre il flag preferito salvato localmente
+                            isFavorite = isFav
+                        )
                     }
+                    // Salvataggio atomico degli slot aggiornati nel database Room locale
                     slotDao.insertSlots(entities)
                 }
             }
         }
 
-        // 3. Sync Locker
+        // 3. Sync Distributori (Locker)
         launch {
             dataSource.observeLockers().collectLatest { lockers ->
-                if (lockers.isNotEmpty()) lockerDao.insertAll(lockers.toLockerEntityList())
+                if (lockers.isNotEmpty()) {
+                    lockerDao.insertAll(lockers.toLockerEntityList())
+                }
             }
         }
     }
 
+    /**
+     * Pulisce le tabelle locali dell'inventario.
+     */
     suspend fun clearCache() {
         toolDao.clearAll()
         slotDao.clearAll()

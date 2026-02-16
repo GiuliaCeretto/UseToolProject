@@ -20,7 +20,7 @@ import com.example.usetool.data.service.Converters
         PurchaseEntity::class,
         RentalEntity::class
     ],
-    version = 6,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

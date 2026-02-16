@@ -3,6 +3,7 @@ package com.example.usetool
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,12 +26,12 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         // 1. Inizializzazione delle dipendenze (Room, Firebase, etc.)
+        enableEdgeToEdge()
         Injection.init(this)
         super.onCreate(savedInstanceState)
 
         // 2. TRIGGER DI SINCRONIZZAZIONE (Opzionale qui)
         // Invece di caricare i JSON, chiediamo ai ViewModel di aggiornare i dati da Firebase
-        syncDataFromFirebase()
 
         setContent {
             UseToolTheme {
@@ -51,9 +52,5 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun syncDataFromFirebase() {
-        // Qui chiamerai i metodi dei tuoi ViewModel/Repository
-        // per scaricare i dati che hai appena caricato a mano.
-        // Esempio: useToolVM.refreshTools()
-    }
+
 }

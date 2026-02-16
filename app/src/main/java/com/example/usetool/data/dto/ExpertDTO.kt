@@ -7,5 +7,6 @@ data class ExpertDTO(
     val profession: String = "",
     val phoneNumber: String = "",
     val bio: String = "",
+    val focus: String = "",
     val imageUrl: String = ""
 )

@@ -32,7 +32,7 @@ data class CartItemEntity(
     val lockerId: String,
     val toolName: String,
     val price: Double,
-    val quantity: Int = 1
+    val quantity: Int
 )
 
 @Dao

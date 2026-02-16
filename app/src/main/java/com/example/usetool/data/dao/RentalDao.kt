@@ -28,8 +28,14 @@ interface RentalDao {
     @Query("SELECT * FROM rentals ORDER BY dataInizio DESC")
     fun getAllRentals(): Flow<List<RentalEntity>>
 
+    @Query("SELECT * FROM rentals WHERE statoNoleggio = 'ATTIVO' ORDER BY dataInizio DESC")
+    fun getActiveRentals(): Flow<List<RentalEntity>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRentals(rentals: List<RentalEntity>)
+
+    @Query("UPDATE rentals SET statoNoleggio = :nuovoStato, dataRiconsegnaEffettiva = :data WHERE id = :rentalId")
+    suspend fun updateRentalStatus(rentalId: String, nuovoStato: String, data: Long)
 
     @Query("DELETE FROM rentals")
     suspend fun clearAll()

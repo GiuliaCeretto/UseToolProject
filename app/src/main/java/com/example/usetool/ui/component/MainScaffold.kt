@@ -1,23 +1,29 @@
 package com.example.usetool.ui.component
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue // NECESSARIO per 'by'
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState // IMPORT MANCANTE
-import com.example.usetool.navigation.NavRoutes // Assicurati che il package sia corretto
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.usetool.navigation.NavRoutes
 
 @Composable
 fun MainScaffold(
     navController: NavHostController,
     content: @Composable (PaddingValues) -> Unit
 ) {
-    // Osserva il backstack per sapere dove si trova l'utente
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Definiamo le rotte principali che richiedono la BottomBar
     val mainRoutes = listOf(
         NavRoutes.Home.route,
         NavRoutes.Search.route,
@@ -27,22 +33,30 @@ fun MainScaffold(
         NavRoutes.Carrello.route
     )
 
-    // Logica di visibilità UI
+    val routesWithoutTopBar = listOf(
+        NavRoutes.Login.route,
+        NavRoutes.Register.route,
+        NavRoutes.SchedaStrumento.route,
+        NavRoutes.SchedaDistributore.route
+    )
+
     val showBottomBar = currentRoute in mainRoutes
-    val showTopBar = currentRoute != NavRoutes.Login.route && currentRoute != NavRoutes.Register.route
+    val showTopBar = currentRoute !in routesWithoutTopBar
 
     Scaffold(
-        topBar = {
-            if (showTopBar) {
-                AppTopBar(navController = navController)
-            }
-        },
-        bottomBar = {
-            if (showBottomBar) {
-                BottomNavBar(navController = navController)
-            }
+        modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { if (showTopBar) AppTopBar(navController) },
+        bottomBar = { if (showBottomBar) BottomNavBar(navController) },
+        // Rimuove gli insets che creano lo spazio bianco
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            content(innerPadding)
         }
-    ) { padding ->
-        content(padding)
     }
 }

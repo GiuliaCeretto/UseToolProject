@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,7 +32,7 @@ import com.example.usetool.R
 import com.example.usetool.data.dao.ExpertEntity
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.viewmodel.ExpertViewModel
-import kotlinx.coroutines.flow.collectLatest
+import com.example.usetool.ui.theme.* import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,20 +56,25 @@ fun Consulenza(
         derivedStateOf {
             experts.filter { expert ->
                 val matchesSearch = searchQuery.isEmpty() ||
-                        "${expert.firstName} ${expert.lastName}".contains(searchQuery, ignoreCase = true)
+                        expert.firstName.contains(searchQuery, ignoreCase = true) ||
+                        expert.lastName.contains(searchQuery, ignoreCase = true) ||
+                        expert.profession.contains(searchQuery, ignoreCase = true) ||
+                        expert.focus.contains(searchQuery, ignoreCase = true)
+
                 val matchesProfession = selectedProfession == null || expert.profession == selectedProfession
+
                 matchesSearch && matchesProfession
             }
         }
     }
 
     val professions = remember(experts) {
-        experts.map { it.profession }.distinct()
+        experts.map { it.profession }.distinct().sorted()
     }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = LightGrayBackground
     ) { padding ->
         Column(
             modifier = Modifier
@@ -78,18 +84,34 @@ fun Consulenza(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo di ricerca con icone di sistema e colori corretti
+            // Campo di ricerca COMPATTO (Altezza 48dp)
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Cerca", color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                placeholder = {
+                    Text(
+                        "Cerca esperto...",
+                        color = GreyMedium,
+                        fontSize = 13.sp
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = BluePrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                textStyle = TextStyle(fontSize = 13.sp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.LightGray,
-                    unfocusedBorderColor = Color.LightGray,
+                    focusedBorderColor = BluePrimary,
+                    unfocusedBorderColor = GreyLight,
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White
                 )
@@ -97,6 +119,7 @@ fun Consulenza(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Filtri Professione
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -105,16 +128,22 @@ fun Consulenza(
                     FilterChip(
                         selected = selectedProfession == null,
                         onClick = { selectedProfession = null },
-                        label = { Text("Tutte") },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFE0E0E0))
+                        label = { Text("Tutte", fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = YellowPrimary,
+                            containerColor = Green2.copy(alpha = 0.5f)
+                        )
                     )
                 }
                 items(professions) { profession ->
                     FilterChip(
                         selected = selectedProfession == profession,
                         onClick = { selectedProfession = profession },
-                        label = { Text(profession) },
-                        colors = FilterChipDefaults.filterChipColors(selectedContainerColor = Color(0xFFE0E0E0))
+                        label = { Text(profession, fontSize = 12.sp) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = YellowPrimary,
+                            containerColor = Green2.copy(alpha = 0.5f)
+                        )
                     )
                 }
             }
@@ -123,7 +152,7 @@ fun Consulenza(
 
             if (experts.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF4A9078))
+                    CircularProgressIndicator(color = Green1)
                 }
             } else {
                 LazyVerticalGrid(
@@ -134,9 +163,9 @@ fun Consulenza(
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
                     items(filteredExperts) { expert ->
-                        ConsultantCardCompact(
-                            expert = expert
-                        ) { navController.navigate(NavRoutes.SchedaConsulente.createRoute(expert.id)) }
+                        ConsultantCardCompact(expert = expert) {
+                            navController.navigate(NavRoutes.SchedaConsulente.createRoute(expert.id))
+                        }
                     }
                 }
             }
@@ -155,17 +184,17 @@ fun ConsultantCardCompact(
             .clickable { onNavigate() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+        border = BorderStroke(1.dp, GreyLight.copy(alpha = 0.5f))
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
+        Column(modifier = Modifier.padding(12.dp)) {
             Text(
-                text = expert.firstName,
+                text = "${expert.firstName} ${expert.lastName}",
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
+                    fontSize = 14.sp,
+                    color = BluePrimary
                 ),
+                maxLines = 1,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -174,7 +203,7 @@ fun ConsultantCardCompact(
                     .fillMaxWidth()
                     .height(110.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFE8F9ED)),
+                    .background(Green2),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -195,15 +224,18 @@ fun ConsultantCardCompact(
                 Text(
                     text = expert.profession,
                     style = MaterialTheme.typography.bodyMedium.copy(
-                        color = Color(0xFF4A9078),
-                        fontWeight = FontWeight.Bold
-                    )
+                        color = Green1,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.sp
+                    ),
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f)
                 )
 
                 Surface(
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(22.dp),
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(0xFFB8D9C6)
+                    color = Green1.copy(alpha = 0.8f)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

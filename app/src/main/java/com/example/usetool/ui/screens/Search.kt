@@ -1,166 +1,93 @@
 package com.example.usetool.ui.screens
 
-import android.annotation.SuppressLint
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.R
+import com.example.usetool.data.dao.LockerEntity
+import com.example.usetool.data.dao.ToolEntity
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.component.SearchToolCard
-import com.example.usetool.ui.theme.BlueLight
-import com.example.usetool.ui.theme.BluePrimary
-import com.example.usetool.ui.theme.YellowMedium
-import com.example.usetool.ui.theme.YellowPrimary
+import com.example.usetool.ui.theme.*
 import com.example.usetool.ui.viewmodel.SearchViewModel
 import com.example.usetool.ui.viewmodel.UseToolViewModel
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-
-@SuppressLint("FrequentlyChangingValue")
 @Composable
 fun SearchScreen(
     navController: NavController,
     searchVm: SearchViewModel,
     useToolVm: UseToolViewModel
 ) {
-    // ... logica degli stati (query, filteredTools, ecc.) invariata ...
     val query by searchVm.query.collectAsStateWithLifecycle()
     val filteredTools by searchVm.filteredTools.collectAsStateWithLifecycle()
     val maxDistance by searchVm.maxDistance.collectAsStateWithLifecycle()
     val selectedTypes by searchVm.selectedTypes.collectAsStateWithLifecycle()
     val tools by useToolVm.topTools.collectAsStateWithLifecycle()
     val lockers by useToolVm.lockers.collectAsStateWithLifecycle()
+    val slots by useToolVm.slots.collectAsStateWithLifecycle()
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    var selectedTab by remember { mutableIntStateOf(0) }
-    val listState = rememberLazyListState()
+    var selectedTab by remember { mutableIntStateOf(0) } // 0: Lista, 1: Mappa
 
-    val displayTools = remember(filteredTools, maxDistance) {
+    // --- FILTRAGGIO AVANZATO ---
+    // Mostriamo solo i tool che hanno almeno uno slot DISPONIBILE con quantity > 0
+    val displayTools = remember(filteredTools, maxDistance, slots) {
         filteredTools.filter { tool ->
-            val dist = useToolVm.getDistanceForTool(tool.id)
-            dist == null || dist <= maxDistance.toDouble()
+            val dist = useToolVm.getDistanceForTool(tool.id) ?: 999.0
+            val isAvailable = slots.any { it.toolId == tool.id && it.quantity > 0 && it.status == "DISPONIBILE" }
+            isAvailable && dist <= maxDistance.toDouble()
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-    ) { padding ->
+    val activeFilters = selectedTypes.filter { it.value }.keys
+    val displayLockers = remember(lockers, slots, activeFilters) {
+        if (activeFilters.isEmpty()) lockers
+        else lockers.filter { locker ->
+            slots.any { it.lockerId == locker.id && activeFilters.contains(it.toolId) && it.quantity > 0 }
+        }
+    }
+
+    Scaffold(containerColor = Color(0xFFF8F9FA)) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                // --- BARRA RICERCA ---
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = { searchVm.setQuery(it) },
-                    placeholder = { Text("Cerca", color = Color.Gray) },
-                    leadingIcon = { Icon(Icons.Default.Search, null, tint = Color.Gray) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(unfocusedBorderColor = Color.LightGray.copy(alpha = 0.5f)),
-                    singleLine = true
-                )
-
-                Spacer(Modifier.height(16.dp))
-
-                // --- SWITCHER ALTO (Attrezzo / Distributore) ---
-                // Nota: rinominato per coerenza con image_5aa6ab.png
-                Switcher(
-                    selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
-                )
-
-                Spacer(Modifier.height(16.dp))
+            Column(modifier = Modifier.fillMaxSize()) {
+                SearchHeader(query, { searchVm.setQuery(it) }, selectedTab == 0)
 
                 if (selectedTab == 0) {
-                    // --- VISTA LISTA (DISTRIBUTORE / LISTA) ---
-                    // ... (Codice della lista invariato) ...
-                    Column {
-                        Surface(
-                            color = BlueLight.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp)) {
-                                Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                                    Text("Distanza da te", fontWeight = FontWeight.Bold)
-                                    Text("Km 0-${maxDistance.roundToInt()}", color = Color.Gray)
-                                }
-                                Slider(
-                                    value = maxDistance,
-                                    onValueChange = { searchVm.setMaxDistance(it) },
-                                    valueRange = 1f..30f,
-                                    colors = SliderDefaults.colors(thumbColor = BluePrimary, activeTrackColor = BluePrimary)
-                                )
-                                Text("Scegli la distanza", fontSize = 11.sp, color = Color.Gray)
-                            }
-                        }
-                        Spacer(Modifier.height(16.dp))
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        DistanceSlider(maxDistance) { searchVm.setMaxDistance(it) }
+
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            contentPadding = PaddingValues(bottom = 100.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp)
                         ) {
                             items(displayTools) { tool ->
                                 SearchToolCard(
@@ -172,255 +99,200 @@ fun SearchScreen(
                         }
                     }
                 } else {
-                    // --- VISTA MAPPA (VICINI A TE / ATTREZZO) ---
-                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        // PANNELLO FILTRI GIALLO (Fedele a image_8d0828.png)
-                        Surface(
-                            color = YellowMedium.copy(alpha = 0.3f), // Giallo tenue come in Figma
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                LazyRow(
-                                    state = listState,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(24.dp)
-                                ) {
-                                    // Organizzazione in colonne da 3 elementi ciascuna (image_8d0828.png)
-                                    items(tools.distinctBy { it.name }.chunked(6)) { toolPage ->
-                                        Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                                            toolPage.chunked(3).forEach { columnItems ->
-                                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                                    columnItems.forEach { tool ->
-                                                        FilterRowItem(
-                                                            text = tool.name,
-                                                            selected = selectedTypes[tool.id] == true,
-                                                            onCheckedChange = { searchVm.toggleType(tool.id) }
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
+                    MapSection(
+                        tools = tools,
+                        selectedTypes = selectedTypes,
+                        onToggle = { searchVm.toggleType(it) },
+                        displayLockers = displayLockers,
+                        onLockerClick = { navController.navigate(NavRoutes.SchedaDistributore.createRoute(it)) }
+                    )
+                }
+            }
+
+            FloatingSwitcher(selectedTab, { selectedTab = it }, Modifier.align(Alignment.BottomCenter))
+        }
+    }
+}
+
+@Composable
+fun MapSection(
+    tools: List<ToolEntity>,
+    selectedTypes: Map<String, Boolean>,
+    onToggle: (String) -> Unit,
+    displayLockers: List<LockerEntity>,
+    onLockerClick: (String) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        // Sezione Filtri a Pagine
+        val toolPages = remember(tools) { tools.distinctBy { it.name }.chunked(6) }
+        if (toolPages.isNotEmpty()) {
+            val pagerState = rememberPagerState(pageCount = { toolPages.size })
+            val scope = rememberCoroutineScope()
+
+            Surface(
+                color = YellowPrimary.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Filtra per Categoria", fontWeight = FontWeight.Bold, color = BluePrimary)
+                    Spacer(Modifier.height(12.dp))
+
+                    HorizontalPager(state = pagerState) { page ->
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            toolPages[page].chunked(3).forEach { columnItems ->
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    columnItems.forEach { tool ->
+                                        FilterRowItem(tool.name, selectedTypes[tool.id] == true) { onToggle(tool.id) }
                                     }
                                 }
-                                Spacer(Modifier.height(12.dp))
-                                // Indicatori a punti (image_8d0828.png)
-                                DotsIndicator(
-                                    totalDots = (tools.distinctBy { it.name }.size / 6) + 1,
-                                    visibleDot = listState.firstVisibleItemIndex
-                                )
                             }
                         }
-
-                        Spacer(Modifier.height(20.dp))
-
-                        // MAPPA CON PIN PERSONALIZZATI (image_5aa6ab.png)
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            modifier = Modifier.fillMaxWidth().height(400.dp),
-                            border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
-                        ) {
-                            Box {
-                                Image(
-                                    painter = painterResource(R.drawable.placeholder_map),
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                                lockers.forEachIndexed { index, locker ->
-                                    // Utilizzo dell'asset 'pin' personalizzato
-                                    Image(
-                                        painter = painterResource(id = R.drawable.pin),
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(35.dp)
-                                            .offset((50 + index * 40).dp, (80 + index * 20).dp)
-                                            .clickable {
-                                                navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
-                                            }
-                                    )
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(120.dp))
                     }
                 }
             }
+        }
 
-            // --- SWITCHER FLOTTANTE BASSO (image_5aa6ab.png) ---
-            Surface(
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp).height(48.dp).width(110.dp),
-                shape = RoundedCornerShape(50),
-                color = Color.White,
-                shadowElevation = 8.dp,
-                border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
-            ) {
-                Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().background(if(selectedTab == 0) BluePrimary.copy(alpha = 0.1f) else Color.Transparent).clickable { selectedTab = 0 }, contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.List,
-                            contentDescription = "Vista Lista",
-                            tint = if(selectedTab == 0) BluePrimary else Color.Gray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Box(modifier = Modifier.weight(1f).fillMaxHeight().background(if(selectedTab == 1) BluePrimary.copy(alpha = 0.1f) else Color.Transparent).clickable { selectedTab = 1 }, contentAlignment = Alignment.Center) {
-                        Icon(painterResource(id = R.drawable.pin), null, tint = if(selectedTab == 1) BluePrimary else Color.Gray, modifier = Modifier.size(20.dp))
-                    }
+        // Mappa
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(400.dp).padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(24.dp),
+            border = BorderStroke(1.dp, Color.LightGray.copy(0.5f))
+        ) {
+            Box {
+                Image(painter = painterResource(R.drawable.placeholder_map), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+
+                displayLockers.forEachIndexed { i, locker ->
+                    LockerPin(locker, i) { onLockerClick(locker.id) }
                 }
             }
+        }
+        Spacer(Modifier.height(100.dp))
+    }
+}
+
+@Composable
+fun LockerPin(locker: LockerEntity, index: Int, onClick: () -> Unit) {
+    // Posizionamento pin fittizio basato su index per la demo
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .offset(x = (50 + (index % 2) * 150).dp, y = (70 + (index / 2) * 100).dp)
+            .clickable { onClick() }
+    ) {
+        Image(painter = painterResource(R.drawable.pin), contentDescription = null, modifier = Modifier.size(36.dp))
+        Surface(color = BluePrimary, shape = RoundedCornerShape(4.dp)) {
+            Text(locker.name, color = Color.White, fontSize = 9.sp, modifier = Modifier.padding(4.dp))
         }
     }
 }
 
 @Composable
-fun FilterRowItem(text: String, selected: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun FilterRowItem(text: String, selected: Boolean, onToggle: () -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.width(140.dp).clickable { onCheckedChange(!selected) }
+        modifier = Modifier.clickable { onToggle() }
     ) {
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f),
-            color = Color.DarkGray
-        )
         Checkbox(
             checked = selected,
-            onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(
-                checkedColor = Color.Gray,
-                uncheckedColor = Color.Gray,
-                checkmarkColor = Color.White
-            ),
-            modifier = Modifier.size(24.dp)
+            onCheckedChange = { onToggle() },
+            colors = CheckboxDefaults.colors(checkedColor = YellowPrimary),
+            modifier = Modifier.scale(0.7f)
         )
+        Text(text, fontSize = 11.sp, maxLines = 1, fontWeight = if(selected) FontWeight.Bold else FontWeight.Normal)
     }
 }
 
+
 @Composable
-fun Switcher(selectedTab: Int, onTabSelected: (Int) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Invertiti: ora Distributore è a sinistra (index 0) e Attrezzo a destra (index 1)
-        SwitcherButton(
-            text = "Distributore",
-            selected = selectedTab == 0,
-            onClick = { onTabSelected(0) },
-            modifier = Modifier.weight(1f)
+fun SearchHeader(query: String, onQueryChange: (String) -> Unit, showSearch: Boolean) {
+    Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+        Text(
+            text = if (showSearch) "Cerca Attrezzi" else "Esplora Mappa",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = BluePrimary
         )
-        SwitcherButton(
-            text = "Attrezzo",
-            selected = selectedTab == 1,
-            onClick = { onTabSelected(1) },
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun MapListSwitcher(selectedMode: Int, onModeSelected: (Int) -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = Color(0xFFF5F5F5),
-        modifier = Modifier.height(40.dp).width(120.dp) // Rimosso .align qui
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(if(selectedMode == 0) BluePrimary else Color.Transparent).clickable { onModeSelected(0) }, contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.Search, contentDescription = null, tint = if(selectedMode == 0) Color.White else Color.Gray, modifier = Modifier.size(20.dp))
-            }
-            Box(modifier = Modifier.weight(1f).fillMaxHeight().background(if(selectedMode == 1) BluePrimary else Color.Transparent).clickable { onModeSelected(1) }, contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.LocationOn, contentDescription = null, tint = if(selectedMode == 1) Color.White else Color.Gray, modifier = Modifier.size(20.dp))
-            }
-        }
-    }
-}
-
-@Composable
-fun SwitcherButton(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (selected) YellowPrimary else Color(0xFFF2F2F2),
-            contentColor = if (selected) Color.Black else Color.Gray
-        )
-    ) {
-        Text(text, fontWeight = FontWeight.Bold)
-    }
-}
-
-@Composable
-fun DotsIndicator(totalDots: Int, visibleDot: Int) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-        repeat(totalDots) { index ->
-            Box(
-                modifier = Modifier
-                    .padding(4.dp)
-                    .size(if (index == visibleDot) 8.dp else 6.dp)
-                    .background(
-                        color = if (index == visibleDot) YellowPrimary else YellowPrimary.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(50)
-                    )
-            )
-        }
-    }
-}
-
-@Composable
-fun ToolFilterBox(text: String, selected: Boolean, onClick: () -> Unit) {
-    val backgroundColor = if (selected) YellowPrimary else Color.White
-    val borderColor = if (selected) YellowPrimary else Color(0xFFE0E0E0)
-    val contentColor = if (selected) Color.Black else Color.DarkGray
-
-    Surface(
-        modifier = Modifier
-            .size(width = 100.dp, height = 110.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        color = backgroundColor,
-        border = BorderStroke(1.dp, borderColor),
-        shadowElevation = if (selected) 4.dp else 0.dp
-    ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                Checkbox(
-                    checked = selected,
-                    onCheckedChange = null,
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = Color(0xFF454545),
-                        checkmarkColor = Color.White,
-                        uncheckedColor = Color.Gray
-                    ),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.Build,
-                contentDescription = null,
-                modifier = Modifier.size(36.dp),
-                tint = if (selected) Color.Black else BluePrimary.copy(alpha = 0.7f)
-            )
-
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelSmall.copy(
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
+        if (showSearch) {
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                placeholder = { Text("Cacciaviti, Trapani...", color = Color.Gray) },
+                leadingIcon = { Icon(Icons.Default.Search, null, tint = YellowPrimary) },
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp).shadow(4.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedContainerColor = Color.White,
+                    focusedContainerColor = Color.White,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedBorderColor = YellowPrimary
                 ),
-                color = contentColor,
-                maxLines = 1,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                singleLine = true
             )
+        }
+    }
+}
+
+@Composable
+fun DistanceSlider(value: Float, onValueChange: (Float) -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
+                Text("Raggio d'azione", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                Text("${value.roundToInt()} km", color = BluePrimary, fontWeight = FontWeight.Bold)
+            }
+            Slider(
+                value = value,
+                onValueChange = onValueChange,
+                valueRange = 1f..100f,
+                colors = SliderDefaults.colors(thumbColor = YellowPrimary, activeTrackColor = BluePrimary)
+            )
+        }
+    }
+}
+
+@Composable
+fun FloatingSwitcher(selectedTab: Int, onTabSelected: (Int) -> Unit, modifier: Modifier) {
+    Surface(
+        modifier = modifier.padding(bottom = 32.dp).height(50.dp).width(160.dp).shadow(8.dp, CircleShape),
+        shape = CircleShape,
+        color = Color.White
+    ) {
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+            SwitcherButton(
+                icon = Icons.AutoMirrored.Filled.List,
+                isSelected = selectedTab == 0,
+                onClick = { onTabSelected(0) },
+                modifier = Modifier.weight(1f)
+            )
+            SwitcherButton(
+                icon = null, // Placeholder per pin icon
+                isSelected = selectedTab == 1,
+                onClick = { onTabSelected(1) },
+                modifier = Modifier.weight(1f),
+                isPin = true
+            )
+        }
+    }
+}
+
+@Composable
+fun SwitcherButton(icon: Any?, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier, isPin: Boolean = false) {
+    Box(
+        modifier = modifier.fillMaxHeight().clip(CircleShape)
+            .background(if (isSelected) YellowPrimary else Color.Transparent)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        if (isPin) {
+            Icon(painter = painterResource(R.drawable.pin), contentDescription = null, modifier = Modifier.size(22.dp), tint = if (isSelected) Color.Black else Color.Gray)
+        } else if (icon is androidx.compose.ui.graphics.vector.ImageVector) {
+            Icon(imageVector = icon, contentDescription = null, tint = if (isSelected) Color.Black else Color.Gray)
         }
     }
 }

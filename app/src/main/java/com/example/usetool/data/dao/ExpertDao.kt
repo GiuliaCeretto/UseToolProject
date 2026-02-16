@@ -15,6 +15,7 @@ data class ExpertEntity(
     val lastName: String,
     val profession: String,
     val bio: String,
+    val focus: String,
     val phoneNumber: String = "",
     val imageUrl: String = ""
 )

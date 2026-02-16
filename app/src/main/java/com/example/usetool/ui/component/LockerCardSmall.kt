@@ -19,80 +19,59 @@ import androidx.compose.ui.unit.sp
 import com.example.usetool.R
 import com.example.usetool.data.dao.LockerEntity
 import com.example.usetool.ui.theme.BluePrimary
+import com.example.usetool.ui.theme.YellowPrimary
 
 @Composable
 fun LockerCardSmall(
     locker: LockerEntity,
-    distanceKm: Double?,
+    address: String,
+    distanceKm: Double,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
-            .width(240.dp)
-            .height(110.dp) // Altezza leggermente aumentata per contenere meglio i testi
-            .padding(6.dp)
-            .clickable { onClick() },
+            .width(160.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White), // Sfondo bianco pulito
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp) // Elevazione aumentata per effetto "pop-up"
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Immagine del distributore (Locker)
+        Column(modifier = Modifier.padding(12.dp)) {
+            // Immagine o Icona del Locker
             Image(
                 painter = painterResource(R.drawable.placeholder_locker),
-                contentDescription = locker.name,
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(RoundedCornerShape(10.dp)),
-                contentScale = ContentScale.Crop
+                contentDescription = null,
+                modifier = Modifier.size(60.dp).align(Alignment.CenterHorizontally)
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(Modifier.height(8.dp))
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                // Nome del distributore in grassetto
-                Text(
-                    text = locker.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            // Nome del Locker
+            Text(
+                text = locker.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                maxLines = 1,
+                color = BluePrimary
+            )
 
-                // ID Locker stilizzato come sottotitolo
-                Text(
-                    text = "ID ${locker.id}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
-                    fontSize = 10.sp
-                )
+            // VIA (Indirizzo) - Aggiunta qui
+            Text(
+                text = address,
+                fontSize = 12.sp,
+                color = Color.Gray,
+                maxLines = 1
+            )
 
-                Spacer(modifier = Modifier.height(6.dp))
+            Spacer(Modifier.height(4.dp))
 
-                // Distanza con icona Pin personalizzata
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.pin),
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = if (distanceKm != null) "%.1f km".format(distanceKm) else "-- km",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = BluePrimary, // Colore primario del tema
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
+            // Distanza
+            Text(
+                text = "${"%.1f".format(distanceKm)} Km",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = YellowPrimary
+            )
         }
     }
 }

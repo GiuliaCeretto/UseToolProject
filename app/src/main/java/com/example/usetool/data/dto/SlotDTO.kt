@@ -5,5 +5,6 @@ data class SlotDTO(
     val lockerId: String = "",
     val toolId: String = "",
     val status: String = "VUOTO", // VUOTO, DISPONIBILE, IN_CARRELLO, NOLEGGIATO, DANNEGGIATO
-    val quantity: Int = 0
+    val quantity: Int = 0,
+    val isFavorite: Boolean = false
 )
