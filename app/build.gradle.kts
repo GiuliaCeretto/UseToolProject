@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.play.services.wallet)
     implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.media3.exoplayer)
     kapt(libs.androidx.room.compiler)
 
     // --- FIREBASE (Remote Data Layer) ---

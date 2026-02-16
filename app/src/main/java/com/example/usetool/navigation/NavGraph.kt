@@ -19,6 +19,7 @@ fun AppNavGraph(
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
     expertViewModel: ExpertViewModel,
+    linkingViewModel: LinkingViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -36,7 +37,12 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Collegamento.route) {
-            CollegamentoScreen(navController)
+            CollegamentoScreen(
+                navController = navController,
+                useToolViewModel = useToolViewModel,
+                cartViewModel = cartViewModel,
+                linkingViewModel = linkingViewModel
+            )
         }
 
         composable(NavRoutes.Consulenza.route) {

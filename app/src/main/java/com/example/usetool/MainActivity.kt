@@ -22,6 +22,7 @@ class MainActivity : ComponentActivity() {
     private val cartVM: CartViewModel by viewModels()
     private val userVM: UserViewModel by viewModels()
     private val expertVM: ExpertViewModel by viewModels()
+    private val linkingVM: LinkingViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +46,7 @@ class MainActivity : ComponentActivity() {
                         cartViewModel = cartVM,
                         userViewModel = userVM,
                         expertViewModel = expertVM,
+                        linkingViewModel = linkingVM,
                         modifier = Modifier.padding(padding)
                     )
                 }
