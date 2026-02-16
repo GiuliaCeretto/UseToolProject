@@ -39,8 +39,6 @@ fun AppNavGraph(
         composable(NavRoutes.Collegamento.route) {
             CollegamentoScreen(
                 navController = navController,
-                useToolViewModel = useToolViewModel,
-                cartViewModel = cartViewModel,
                 linkingViewModel = linkingViewModel
             )
         }

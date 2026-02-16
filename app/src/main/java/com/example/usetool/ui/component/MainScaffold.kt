@@ -48,15 +48,17 @@ fun MainScaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { if (showTopBar) AppTopBar(navController) },
         bottomBar = { if (showBottomBar) BottomNavBar(navController) },
-        // Rimuove gli insets che creano lo spazio bianco
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
         ) {
-            content(innerPadding)
+            content(PaddingValues())
         }
     }
 }

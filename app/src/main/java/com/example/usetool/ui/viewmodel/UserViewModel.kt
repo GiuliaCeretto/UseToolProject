@@ -184,6 +184,22 @@ class UserViewModel(
     }
 
     fun resetState() { _loginState.value = LoginResult.Idle }
+
+    // --- CAMPI LOGIN PERSISTENTI ---
+
+    private val _email = MutableStateFlow("")
+    val email: StateFlow<String> = _email.asStateFlow()
+
+    private val _password = MutableStateFlow("")
+    val password: StateFlow<String> = _password.asStateFlow()
+
+    fun onEmailChange(value: String) {
+        _email.value = value
+    }
+
+    fun onPasswordChange(value: String) {
+        _password.value = value
+    }
 }
 
 sealed class LoginResult {

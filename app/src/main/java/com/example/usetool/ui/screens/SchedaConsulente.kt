@@ -173,11 +173,16 @@ fun SchedaConsulenteScreen(
 
         if (showDialog && expert != null) {
             AlertDialog(
-                onDismissRequest = { },
+                onDismissRequest = {
+                    showDialog = false
+                },
                 title = { Text("Chiamata in uscita", fontWeight = FontWeight.Bold) },
-                text = { Text("Stai per contattare ${expert.firstName}. La chiamata utilizzerà il tuo piano tariffario.") },
+                text = {
+                    Text("Stai per contattare ${expert.firstName}. La chiamata utilizzerà il tuo piano tariffario.")
+                },
                 confirmButton = {
                     TextButton(onClick = {
+                        showDialog = false   // Chiude il popup
                         val intent = Intent(Intent.ACTION_DIAL).apply {
                             data = "tel:${expert.phoneNumber}".toUri()
                         }
@@ -187,7 +192,9 @@ fun SchedaConsulenteScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { }) {
+                    TextButton(onClick = {
+                        showDialog = false   // ← QUESTA È LA PARTE CHE MANCAVA
+                    }) {
                         Text("ANNULLA", color = GreyMedium)
                     }
                 }

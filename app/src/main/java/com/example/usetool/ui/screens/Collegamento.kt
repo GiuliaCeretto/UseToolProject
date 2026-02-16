@@ -2,203 +2,163 @@
 
 package com.example.usetool.ui.screens
 
-import androidx.compose.foundation.Image
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.usetool.R
-import com.example.usetool.ui.component.*
-import com.example.usetool.ui.viewmodel.*
+import com.example.usetool.ui.viewmodel.LinkingViewModel
 
 @Composable
 fun CollegamentoScreen(
     navController: NavController,
-    useToolViewModel: UseToolViewModel,
-    cartViewModel: CartViewModel,
     linkingViewModel: LinkingViewModel
 ) {
 
+    val inputCode by linkingViewModel.inputCode.collectAsState()
     val isLinked by linkingViewModel.isLinked.collectAsState()
-    val cartItems by cartViewModel.cartItems.collectAsState()
-    val isProcessing by cartViewModel.isProcessing.collectAsState()
 
-    val locker = useToolViewModel.lockers.collectAsState().value.firstOrNull()
+    var showDialog by remember { mutableStateOf(false) }
 
-    // Calcolo totale
-    val total = cartItems.sumOf { it.price * it.quantity }
+    val toneGenerator = remember {
+        ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+    }
+
+    // Mappatura numero → frequenza (Hz simulata tramite TONE_DTMF)
+    fun playTone(number: Int) {
+        val tone = when (number) {
+            1 -> ToneGenerator.TONE_DTMF_1
+            2 -> ToneGenerator.TONE_DTMF_2
+            3 -> ToneGenerator.TONE_DTMF_3
+            4 -> ToneGenerator.TONE_DTMF_4
+            5 -> ToneGenerator.TONE_DTMF_5
+            6 -> ToneGenerator.TONE_DTMF_6
+            7 -> ToneGenerator.TONE_DTMF_7
+            8 -> ToneGenerator.TONE_DTMF_8
+            9 -> ToneGenerator.TONE_DTMF_9
+            else -> ToneGenerator.TONE_DTMF_0
+        }
+
+        toneGenerator.startTone(tone, 200)
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        if (!isLinked) {
 
-            Spacer(modifier = Modifier.height(100.dp))
-
-            Button(
-                onClick = { linkingViewModel.link() },
-                modifier = Modifier
-                    .size(150.dp)
-                    .padding(16.dp),
-                shape = RoundedCornerShape(75.dp)
-            ) {
-                Text("Collega")
-            }
-
-        } else {
-
-            locker?.let {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    elevation = CardDefaults.cardElevation(4.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-
-                        Image(
-                            painter = painterResource(R.drawable.placeholder_locker),
-                            contentDescription = it.name,
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(RoundedCornerShape(12.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Text(it.name, style = MaterialTheme.typography.titleMedium)
-                            Text("Codice: ${it.id}")
-                            Text(it.address)
-                        }
-                    }
-                }
-            }
-
-            // ==========================
-            // 🛒 RIEPILOGO CARRELLO
-            // ==========================
-
-            Card(
+        // BOX CODICE
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                elevation = CardDefaults.cardElevation(4.dp)
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Il tuo codice di collegamento è:",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
 
-                    Text("Riepilogo Ordine", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    text = "2568",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                    cartItems.forEach { item ->
+                Text(
+                    text = "Inserito: $inputCode",
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
 
-                        val subtotal = item.price * item.quantity
 
-                        Row(
+        Spacer(modifier = Modifier.height(32.dp))
+
+
+        // TASTIERINO
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            for (row in 0..2) {
+                Row {
+                    for (col in 1..3) {
+                        val number = row * 3 + col
+                        Button(
+                            onClick = {
+                                playTone(number)
+                                linkingViewModel.addDigit(number)
+                            },
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .size(80.dp)
+                                .padding(8.dp),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-
-                            Text(
-                                text = item.toolName,
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            // Pulsante -
-                            IconButton(
-                                onClick = {
-                                    cartViewModel.updateItemQuantity(
-                                        item.slotId,
-                                        item.quantity - 1
-                                    )
-                                }
-                            ) {
-                                Text("-")
-                            }
-
-                            Text(item.quantity.toString())
-
-                            // Pulsante +
-                            IconButton(
-                                onClick = {
-                                    cartViewModel.updateItemQuantity(
-                                        item.slotId,
-                                        item.quantity + 1
-                                    )
-                                }
-                            ) {
-                                Text("+")
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            Text("€${String.format("%.2f", subtotal)}")
+                            Text(number.toString())
                         }
-                    }
-
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                    Text(
-                        "Totale: €${String.format("%.2f", total)}",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            cartViewModel.performCheckout { rentalIds ->
-                                // Navigazione post-checkout
-                                navController.navigate("checkout_success")
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = cartItems.isNotEmpty() && !isProcessing
-                    ) {
-                        if (isProcessing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Text("Acquista")
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedButton(
-                        onClick = { linkingViewModel.unlink() },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Scollegati")
                     }
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // PULSANTE COLLEGA
+
+        Button(
+            onClick = {
+                if (linkingViewModel.checkCode()) {
+                    linkingViewModel.link()
+                    showDialog = true
+                } else {
+                    linkingViewModel.resetCode()
+                }
+            },
+            enabled = inputCode.length == 4,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Collega")
+        }
+    }
+
+    // POPUP SUCCESSO
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = {},
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDialog = false
+                        navController.navigate("home") {
+                            popUpTo("collegamento") { inclusive = true }
+                        }
+                    }
+                ) {
+                    Text("OK")
+                }
+            },
+            title = { Text("Successo") },
+            text = { Text("Collegamento avvenuto con successo") }
+        )
     }
 }
+
