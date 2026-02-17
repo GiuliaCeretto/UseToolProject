@@ -17,6 +17,7 @@ object Injection {
     private var userRepository: UserRepository? = null
     private var orderRepository: OrderRepository? = null
     private var expertRepository: ExpertRepository? = null
+    private var linkRepo: LinkRepo? = null
 
     fun init(context: Context) {
         if (database == null) {
@@ -24,7 +25,7 @@ object Injection {
         }
     }
 
-    private fun getDb() = database ?: throw IllegalStateException("Injection non inizializzato!")
+    private fun getDb() = database ?: throw IllegalStateException("Injection non inizializzato! Chiama Injection.init(context) nell'Application class o nella MainActivity.")
 
     fun provideFirebaseAuth(): FirebaseAuth = FirebaseAuth.getInstance()
 
@@ -37,21 +38,25 @@ object Injection {
         }
     }
 
-    // --- REPOSITORY PROVIDERS ---
+    fun provideLinkRepo() = linkRepo ?: LinkRepo(
+        dataSource = provideDataSource(),
+        linkDao = getDb().linkDao()
+    ).also { linkRepo = it }
 
     fun provideInventoryRepository() = inventoryRepository ?: InventoryRepository(
         dataSource = provideDataSource(),
         toolDao = getDb().toolDao(),
         slotDao = getDb().slotDao(),
         lockerDao = getDb().lockerDao(),
-        cartDao = getDb().cartDao() // 🔥 AGGIUNTO: Necessario per proteggere lo stato degli slot in sync
+        cartDao = getDb().cartDao()
     ).also { inventoryRepository = it }
 
     fun provideCartRepository() = cartRepository ?: CartRepository(
         dataSource = provideDataSource(),
         cartDao = getDb().cartDao(),
         toolDao = getDb().toolDao(),
-        slotDao = getDb().slotDao()
+        slotDao = getDb().slotDao(),
+        lockerDao = getDb().lockerDao()
     ).also { cartRepository = it }
 
     fun provideUserRepository() = userRepository ?: UserRepository(

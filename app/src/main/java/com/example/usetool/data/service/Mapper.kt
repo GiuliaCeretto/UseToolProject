@@ -53,6 +53,10 @@ fun SlotEntity.toDto(): SlotDTO = SlotDTO(
 fun List<SlotDTO>.toSlotEntityList(): List<SlotEntity> = this.map { it.toEntity() }
 
 // --- LOCKER ---
+/**
+ * Mappatura del Locker: include linkId (Int) per lo sblocco hardware
+ * e id (String) per l'identificazione nel database.
+ */
 fun LockerDTO.toEntity(): LockerEntity = LockerEntity(
     id = id,
     name = name,
@@ -64,7 +68,8 @@ fun LockerDTO.toEntity(): LockerEntity = LockerEntity(
     saleSlotsCount = saleSlotsCount,
     rentalSlotsCount = rentalSlotsCount,
     macAddress = macAddress,
-    toolIds = toolIds
+    toolIds = toolIds,
+    linkId = linkId // Fondamentale per il collegamento hardware
 )
 
 fun List<LockerDTO>.toLockerEntityList(): List<LockerEntity> = this.map { it.toEntity() }
@@ -111,7 +116,7 @@ fun PurchaseDTO.toEntity(): PurchaseEntity = PurchaseEntity(
     toolName = toolName ?: "",
     prezzoPagato = prezzoPagato,
     dataAcquisto = dataAcquisto,
-    lockerId = lockerId ?: "",
+    lockerId = lockerId ?: "", // Salvato come linkId (String) per il filtraggio
     slotId = slotId ?: "",
     dataRitiro = dataRitiro ?: 0L,
     dataRitiroEffettiva = dataRitiroEffettiva,
@@ -136,16 +141,12 @@ fun PurchaseEntity.toFirebaseMap(): Map<String, Any?> = mapOf(
 fun List<PurchaseDTO>.toPurchaseEntityList(): List<PurchaseEntity> = this.map { it.toEntity() }
 
 // --- RENTAL (Noleggio) ---
-/**
- * 🔥 CORRETTO: Aggiunta gestione valori di default per evitare crash in Room
- * durante la lettura da Firebase (noleggi "null" o incompleti).
- */
 fun RentalDTO.toEntity(): RentalEntity = RentalEntity(
     id = id ?: "",
     userId = userId ?: "",
     toolId = toolId ?: "",
     toolName = toolName ?: "Strumento",
-    lockerId = lockerId ?: "",
+    lockerId = lockerId ?: "", // Utilizza il linkId numerico mappato come stringa
     slotId = slotId ?: "",
     dataInizio = dataInizio,
     dataFinePrevista = dataFinePrevista,
@@ -187,3 +188,23 @@ fun CartEntity.toDto(itemsMap: Map<String, SlotDTO>): CartDTO = CartDTO(
     status = this.status,
     ultimoAggiornamento = this.ultimoAggiornamento
 )
+
+// --- LINK (Connessioni Locker) ---
+/**
+ * Mappatura per il log delle connessioni hardware.
+ */
+fun LinkDTO.toEntity(): LinkEntity = LinkEntity(
+    id = id,
+    lockerId = lockerId, // Rappresenta il linkId (Int)
+    userId = userId,     // Hash numerico dell'UID utente
+    connectionTime = connectionTime
+)
+
+fun LinkEntity.toDto(): LinkDTO = LinkDTO(
+    id = this.id,
+    lockerId = this.lockerId,
+    userId = this.userId,
+    connectionTime = this.connectionTime
+)
+
+fun List<LinkDTO>.toLinkEntityList(): List<LinkEntity> = this.map { it.toEntity() }

@@ -8,6 +8,7 @@ sealed class NavRoutes(val route: String) {
     object Profilo : NavRoutes("profilo")
     object Login : NavRoutes("login")
     object Register : NavRoutes("register")
+    object Carrello : NavRoutes("carrello")
 
     object SchedaDistributore : NavRoutes("distributore/{id}") {
         fun createRoute(id: String) = "distributore/$id"
@@ -17,8 +18,13 @@ sealed class NavRoutes(val route: String) {
         fun createRoute(id: String) = "strumento/$id"
     }
 
-    object Carrello : NavRoutes("carrello")
-    object Pagamento : NavRoutes("pagamento")
+    object Pagamento : NavRoutes("pagamento/{lockerId}") {
+        fun createRoute(lockerId: Int) = "pagamento/$lockerId"
+    }
+
+    object Linking : NavRoutes("linking/{lockerIds}") {
+        fun createRoute(lockerIds: String) = "linking/$lockerIds"
+    }
 
     object SchedaConsulente : NavRoutes("consulente/{id}") {
         fun createRoute(id: String) = "consulente/$id"

@@ -26,7 +26,6 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 1. Inizializzazione delle dipendenze (Room, Firebase, etc.)
         enableEdgeToEdge()
         Injection.init(this)
         super.onCreate(savedInstanceState)

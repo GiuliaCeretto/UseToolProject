@@ -29,6 +29,11 @@ fun CarrelloScreen(
     val isProcessing by cartViewModel.isProcessing.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // 🔥 Calcolo dei Locker ID unici presenti nel carrello
+    val uniqueLockerIds = remember(items) {
+        items.mapNotNull { it.lockerId }.distinct()
+    }
+
     LaunchedEffect(Unit) {
         cartViewModel.refreshCart()
     }
@@ -57,6 +62,7 @@ fun CarrelloScreen(
                 )
 
                 if (items.isEmpty() && !isProcessing) {
+                    // ... (Stessa logica carrello vuoto)
                     Box(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
                         contentAlignment = Alignment.Center
@@ -94,16 +100,8 @@ fun CarrelloScreen(
 
                                 CartItemCard(
                                     item = item,
-                                    onIncrease = {
-                                        // Aumenta la quantità di 1
-                                        cartViewModel.updateItemQuantity(item.slotId, item.quantity + 1)
-                                    },
-                                    onDecrease = {
-                                        // Diminuisce la quantità solo se superiore a 1
-                                        if (item.quantity > 1) {
-                                            cartViewModel.updateItemQuantity(item.slotId, item.quantity - 1)
-                                        }
-                                    },
+                                    onIncrease = { cartViewModel.updateItemQuantity(item.slotId, item.quantity + 1) },
+                                    onDecrease = { if (item.quantity > 1) cartViewModel.updateItemQuantity(item.slotId, item.quantity - 1) },
                                     onRemove = { cartViewModel.removeItem(item.slotId) }
                                 )
                             }
@@ -121,12 +119,23 @@ fun CarrelloScreen(
                     border = AssistChipDefaults.assistChipBorder(enabled = true)
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
+
+                        // 🔥 Avviso informativo se ci sono più locker
+                        if (uniqueLockerIds.size > 1) {
+                            Text(
+                                text = "Attenzione: gli oggetti sono in ${uniqueLockerIds.size} locker diversi.",
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text("Totale da pagare", style = MaterialTheme.typography.titleMedium)
+                            Text("Totale provvisorio", style = MaterialTheme.typography.titleMedium)
                             Text(
                                 text = "€ ${"%.2f".format(totale)}",
                                 style = MaterialTheme.typography.headlineMedium,
@@ -138,7 +147,10 @@ fun CarrelloScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
-                            onClick = { navController.navigate(NavRoutes.Pagamento.route) },
+                            onClick = {
+                                val idsString = uniqueLockerIds.joinToString(",")
+                                navController.navigate(NavRoutes.Linking.createRoute(idsString))
+                            },
                             enabled = items.isNotEmpty() && !isProcessing,
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(16.dp),
@@ -147,18 +159,11 @@ fun CarrelloScreen(
                             if (isProcessing) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                             } else {
-                                Text("PROCEDI AL PAGAMENTO", fontWeight = FontWeight.Bold)
+                                Text("COLLEGATI AL LOCKER", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
-            }
-
-            if (isProcessing && items.isEmpty()) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = BluePrimary
-                )
             }
         }
     }

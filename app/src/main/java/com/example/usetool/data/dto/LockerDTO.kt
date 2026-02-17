@@ -12,4 +12,5 @@ data class LockerDTO(
     val rentalSlotsCount: Int = 0,
     val macAddress: String = "",
     val toolIds: List<String> = emptyList(),
+    val linkId: Int = 0
     )

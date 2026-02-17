@@ -61,17 +61,10 @@ class CartViewModel(
         }
     }
 
-    /**
-     * 🔥 NUOVO: Aggiorna la quantità di un articolo esistente.
-     * Chiamato dai pulsanti + e - della CartItemCard.
-     */
     fun updateItemQuantity(slotId: String, newQuantity: Int) {
         if (userId.isEmpty() || _isProcessing.value || newQuantity < 1) return
-
         viewModelScope.launch {
-            // Non impostiamo _isProcessing a true qui per permettere un'interazione fluida
             try {
-                // Passiamo la nuova quantità al repository che gestirà Firebase e Room
                 cartRepository.updateItemQuantity(userId, slotId, newQuantity)
             } catch (e: Exception) {
                 _errorMessage.emit("Impossibile aggiornare quantità")
@@ -81,7 +74,6 @@ class CartViewModel(
 
     fun addMultipleToolsToCart(toolsWithSlots: List<Pair<ToolEntity, SlotEntity>>) {
         if (userId.isEmpty() || _isProcessing.value || toolsWithSlots.isEmpty()) return
-
         viewModelScope.launch {
             _isProcessing.value = true
             try {
@@ -112,17 +104,29 @@ class CartViewModel(
         }
     }
 
-    fun performCheckout(onSuccess: (List<String>) -> Unit) {
+    /**
+     * Esegue il checkout parziale per gli articoli di un locker specifico.
+     * Il filtraggio ora confronta direttamente la stringa lockerId (linkId).
+     */
+    fun performCheckout(lockerId: Int, onSuccess: (List<String>) -> Unit) {
         val currentCart = cartHeader.value ?: return
-        val items = cartItems.value
+        val allItems = cartItems.value
 
-        if (_isProcessing.value || items.isEmpty()) return
+        val itemsToPay = allItems.filter { it.lockerId == lockerId.toString() }
+
+        if (_isProcessing.value || itemsToPay.isEmpty()) return
 
         viewModelScope.launch {
             _isProcessing.value = true
             try {
-                val rentalIds = orderRepository.processCheckout(userId, currentCart, items)
-                cartRepository.clearLocalCart(currentCart.id)
+                // 1. Processiamo il pagamento solo per gli oggetti del locker attuale
+                val rentalIds = orderRepository.processCheckout(userId, currentCart, itemsToPay)
+
+                // 2. Rimuoviamo dal carrello locale SOLO gli articoli effettivamente pagati
+                itemsToPay.forEach { item ->
+                    cartRepository.removeItemFromCart(userId, item.slotId)
+                }
+
                 _errorMessage.emit("Pagamento completato con successo!")
                 onSuccess(rentalIds)
             } catch (e: Exception) {

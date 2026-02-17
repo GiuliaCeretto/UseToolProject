@@ -27,16 +27,18 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.exoplayer.offline.Download
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.usetool.R
 import com.example.usetool.ui.theme.*
 import com.example.usetool.ui.viewmodel.CartViewModel
 import com.example.usetool.ui.viewmodel.UseToolViewModel
+import androidx.core.net.toUri
 
 const val PDF_MANUAL_URL = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
 
@@ -73,7 +75,6 @@ fun SchedaStrumentoScreen(
     val isFavorite = toolSlot?.isFavorite ?: false
 
     var isProcessing by remember { mutableStateOf(false) }
-    var isVideoPlaying by remember { mutableStateOf(false) }
     var showSuccessDialog by remember { mutableStateOf(false) }
     var selectedQuantity by remember { mutableIntStateOf(1) }
 
@@ -168,7 +169,10 @@ fun SchedaStrumentoScreen(
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().background(LightGrayBackground).padding(top = padding.calculateTopPadding()),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(LightGrayBackground)
+                .padding(top = padding.calculateTopPadding()),
             contentPadding = PaddingValues(bottom = padding.calculateBottomPadding() + 24.dp)
         ) {
             item {
@@ -180,11 +184,14 @@ fun SchedaStrumentoScreen(
                         border = BorderStroke(1.dp, GreyLight.copy(alpha = 0.5f))
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Image(
-                                painter = painterResource(id = R.drawable.placeholder_tool),
+                            // Sostituzione con AsyncImage per caricamento da URL
+                            AsyncImage(
+                                model = tool.imageUrl,
                                 contentDescription = tool.name,
-                                modifier = Modifier.fillMaxSize(0.7f),
-                                contentScale = ContentScale.Fit
+                                modifier = Modifier.fillMaxSize(0.8f),
+                                contentScale = ContentScale.Fit,
+                                error = painterResource(id = R.drawable.placeholder_tool),
+                                placeholder = painterResource(id = R.drawable.placeholder_tool)
                             )
                         }
                     }
@@ -223,26 +230,27 @@ fun SchedaStrumentoScreen(
                     Text("Guida all'utilizzo", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = BluePrimary)
                     Spacer(Modifier.height(16.dp))
 
-                    // Player Video
+                    // Player Video Section
                     Card(
                         modifier = Modifier.fillMaxWidth().height(180.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.Black)
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            if (!isVideoPlaying) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.placeholder_tool),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxSize().alpha(0.4f),
-                                    contentScale = ContentScale.Crop
-                                )
-                                IconButton(onClick = {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/watch?v=EVgd4gvY0hU"))
-                                    context.startActivity(intent)
-                                }) {
-                                    Icon(Icons.Default.PlayCircleFilled, null, tint = YellowPrimary, modifier = Modifier.size(64.dp))
-                                }
+                            // Immagine di anteprima video caricata da URL
+                            AsyncImage(
+                                model = tool.imageUrl,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().alpha(0.5f),
+                                contentScale = ContentScale.Crop,
+                                error = painterResource(id = R.drawable.placeholder_tool)
+                            )
+                            IconButton(onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW,
+                                    "https://www.youtube.com/watch?v=EVgd4gvY0hU".toUri())
+                                context.startActivity(intent)
+                            }) {
+                                Icon(Icons.Default.PlayCircleFilled, null, tint = YellowPrimary, modifier = Modifier.size(64.dp))
                             }
                         }
                     }
@@ -297,11 +305,22 @@ fun SchedaStrumentoScreen(
 fun QuantitySelector(quantity: Int, maxQuantity: Int, onQuantityChange: (Int) -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.background(LightGrayBackground, RoundedCornerShape(12.dp)).padding(4.dp)
+        modifier = Modifier
+            .background(LightGrayBackground, RoundedCornerShape(12.dp))
+            .padding(4.dp)
     ) {
-        IconButton(onClick = { if (quantity > 1) onQuantityChange(quantity - 1) }) { Text("-", fontWeight = FontWeight.Bold) }
-        Text(text = quantity.toString(), modifier = Modifier.padding(horizontal = 12.dp), fontWeight = FontWeight.Bold)
-        IconButton(onClick = { if (quantity < maxQuantity) onQuantityChange(quantity + 1) }) { Text("+", fontWeight = FontWeight.Bold) }
+        IconButton(onClick = { if (quantity > 1) onQuantityChange(quantity - 1) }) {
+            Text("-", fontWeight = FontWeight.Bold, color = BluePrimary)
+        }
+        Text(
+            text = quantity.toString(),
+            modifier = Modifier.padding(horizontal = 12.dp),
+            fontWeight = FontWeight.Bold,
+            color = BluePrimary
+        )
+        IconButton(onClick = { if (quantity < maxQuantity) onQuantityChange(quantity + 1) }) {
+            Text("+", fontWeight = FontWeight.Bold, color = BluePrimary)
+        }
     }
 }
 
@@ -323,7 +342,7 @@ fun SpecCard(label: String, value: String, modifier: Modifier = Modifier) {
 fun downloadPdf(context: Context, url: String) {
     try {
         val manager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-        val request = DownloadManager.Request(Uri.parse(url))
+        val request = DownloadManager.Request(url.toUri())
             .setTitle("Manuale Uso Strumento")
             .setDescription("Download in corso...")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)

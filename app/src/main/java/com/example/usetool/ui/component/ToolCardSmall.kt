@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.usetool.R
 import com.example.usetool.data.dao.ToolEntity
+import coil.compose.AsyncImage
 
 @Composable
 fun ToolCardSmall(
@@ -32,14 +33,16 @@ fun ToolCardSmall(
     ) {
         Box {
             Column(modifier = Modifier.padding(8.dp)) {
-                Image(
-                    painter = painterResource(id = R.drawable.placeholder_tool),
+                AsyncImage(
+                    model = tool.imageUrl,
                     contentDescription = tool.name,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(90.dp)
                         .padding(4.dp),
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit,
+                    error = painterResource(id = R.drawable.placeholder_tool),
+                    placeholder = painterResource(id = R.drawable.placeholder_tool)
                 )
 
                 Text(

@@ -26,7 +26,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.usetool.R
 import com.example.usetool.data.dao.ExpertEntity
-import com.example.usetool.navigation.NavRoutes // Importa le tue rotte
+import com.example.usetool.navigation.NavRoutes
+import coil.compose.AsyncImage
 import com.example.usetool.ui.theme.Green1
 import com.example.usetool.ui.theme.Green2
 
@@ -52,7 +53,7 @@ fun ConsultantCard(
         ) {
             // Icona "Torna indietro" (Opzionale, se fa parte della card)
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back",
                 modifier = Modifier.size(24.dp).padding(bottom = 12.dp),
                 tint = Color.DarkGray
@@ -64,14 +65,16 @@ fun ConsultantCard(
                     .fillMaxWidth()
                     .height(180.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFE8F9ED)), // Verde chiarissimo dell'immagine
+                    .background(Color(0xFFE8F9ED)),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.placeholder_profilo),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxHeight(0.8f),
-                    contentScale = ContentScale.Fit
+                AsyncImage(
+                    model = expert.imageUrl, // URL dal database
+                    contentDescription = "Immagine di ${expert.profession}",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = R.drawable.placeholder_profilo),
+                    placeholder = painterResource(id = R.drawable.placeholder_profilo)
                 )
             }
 

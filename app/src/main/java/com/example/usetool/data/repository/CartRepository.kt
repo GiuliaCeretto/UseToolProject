@@ -11,7 +11,8 @@ class CartRepository(
     private val dataSource: DataSource,
     private val cartDao: CartDao,
     private val toolDao: ToolDao,
-    private val slotDao: SlotDao
+    private val slotDao: SlotDao,
+    private val lockerDao: LockerDao
 ) {
     // Flag per evitare che il sync dal network sovrascriva operazioni locali in corso
     private var isLocalOperationActive = false
@@ -22,6 +23,7 @@ class CartRepository(
 
     /**
      * Sincronizza il carrello da Firebase a Room (Database locale).
+     * Mappa l'ID stringa del locker nel linkId numerico per permettere lo sblocco e il filtraggio.
      */
     suspend fun syncCartFromNetwork(userId: String) {
         dataSource.observeUserCart(userId).collectLatest { cartDto ->
@@ -33,20 +35,28 @@ class CartRepository(
             }
 
             val safeCartId = cartDto.id ?: "cart_$userId"
+
+            // Snapshot dei dati necessari per il mapping
             val toolsMap = toolDao.getAllTools().firstOrNull()?.associateBy { it.id } ?: emptyMap()
+            val lockersMap = lockerDao.getAll().firstOrNull()?.associateBy { it.id } ?: emptyMap()
+            val slotsMap = slotDao.getAllSlots().firstOrNull()?.associateBy { it.id } ?: emptyMap()
 
             val itemEntities = cartDto.items.map { (slotId, slotDto) ->
                 val tool = toolsMap[slotDto.toolId]
+                val slot = slotsMap[slotId]
+                val locker = lockersMap[slot?.lockerId]
+
                 slotDao.updateSlotStatus(slotId, "IN_CARRELLO")
 
                 CartItemEntity(
                     cartId = safeCartId,
                     slotId = slotId,
                     toolId = slotDto.toolId,
-                    lockerId = "",
+                    // Salviamo il linkId (Int) come stringa per coerenza con il sistema di sblocco
+                    lockerId = locker?.linkId?.toString() ?: "",
                     toolName = tool?.name ?: "Strumento",
                     price = tool?.price ?: 0.0,
-                    quantity = slotDto.quantity // Riceve la quantità corretta dal network
+                    quantity = slotDto.quantity
                 )
             }
 
@@ -55,11 +65,10 @@ class CartRepository(
     }
 
     /**
-     * 🔥 AGGIUNTO: Aggiorna la quantità di un singolo articolo nel carrello.
-     * Gestisce il ricalcolo del totale e la sincronizzazione con Firebase.
+     * Aggiorna la quantità di un singolo articolo nel carrello.
      */
     suspend fun updateItemQuantity(userId: String, slotId: String, newQuantity: Int) {
-        if (newQuantity < 1) return // La rimozione deve passare per removeItem
+        if (newQuantity < 1) return
 
         isLocalOperationActive = true
         try {
@@ -69,17 +78,13 @@ class CartRepository(
 
             val index = currentItems.indexOfFirst { it.slotId == slotId }
             if (index != -1) {
-                // 1. Aggiorna l'item nella lista locale
                 currentItems[index] = currentItems[index].copy(quantity = newQuantity)
 
-                // 2. Ricalcola il totale pesato
                 val newTotal = currentItems.sumOf { it.price * it.quantity }
                 val updatedHeader = currentHeader.copy(totaleProvvisorio = newTotal)
 
-                // 3. Persistenza Locale Room
                 cartDao.updateFullCart(updatedHeader, currentItems)
 
-                // 4. Persistenza Remota Firebase
                 val itemsMap = currentItems.associate {
                     it.slotId to SlotDTO(
                         id = it.slotId, toolId = it.toolId, status = "IN_CARRELLO", quantity = it.quantity
@@ -99,6 +104,7 @@ class CartRepository(
 
     /**
      * Aggiunta batch di più strumenti al carrello.
+     * Recupera il linkId dal locker per popolare correttamente la CartItemEntity.
      */
     suspend fun addMultipleItemsToCart(userId: String, items: List<Pair<ToolEntity, SlotEntity>>) {
         if (items.isEmpty()) return
@@ -106,6 +112,7 @@ class CartRepository(
         try {
             val safeCartId = "cart_$userId"
             val currentItems = cartDao.getItemsByCartId(safeCartId).firstOrNull()?.toMutableList() ?: mutableListOf()
+            val allLockers = lockerDao.getAll().firstOrNull() ?: emptyList()
             val updates = mutableMapOf<String, Any?>()
 
             val itemsGrouped = items.groupBy { it.second.id }
@@ -117,6 +124,10 @@ class CartRepository(
 
                 val existingItemIndex = currentItems.indexOfFirst { it.slotId == slotId }
 
+                // Cerchiamo il linkId numerico del locker
+                val locker = allLockers.find { it.id == slot.lockerId }
+                val numericLockerId = locker?.linkId?.toString() ?: ""
+
                 if (existingItemIndex != -1) {
                     currentItems[existingItemIndex] = currentItems[existingItemIndex].copy(
                         quantity = quantityToAdd
@@ -126,7 +137,7 @@ class CartRepository(
                         cartId = safeCartId,
                         slotId = slotId,
                         toolId = tool.id,
-                        lockerId = slot.lockerId,
+                        lockerId = numericLockerId, // Utilizzo linkId numerico
                         toolName = tool.name,
                         price = tool.price,
                         quantity = quantityToAdd
@@ -167,7 +178,7 @@ class CartRepository(
             val currentItems = cartDao.getItemsByCartId(safeCartId).firstOrNull() ?: emptyList()
 
             val updatedList = currentItems.filter { it.slotId != slotId }
-            val newTotal = updatedList.sumOf { it.price * it.quantity } // Calcolo corretto anche qui
+            val newTotal = updatedList.sumOf { it.price * it.quantity }
             val updatedCartHeader = localCart.copy(totaleProvvisorio = newTotal)
 
             slotDao.updateSlotStatus(slotId, "DISPONIBILE")
@@ -181,7 +192,7 @@ class CartRepository(
 
             dataSource.updateMultipleNodes(mapOf(
                 "slots/$slotId/status" to "DISPONIBILE",
-                "slots/$slotId/quantity" to 1, // Ripristina quantità unitaria
+                "slots/$slotId/quantity" to 1,
                 "carts/$userId" to updatedCartHeader.toDto(itemsMap)
             ))
 

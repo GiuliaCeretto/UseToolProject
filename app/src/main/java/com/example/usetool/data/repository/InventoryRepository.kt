@@ -14,33 +14,27 @@ class InventoryRepository(
     private val lockerDao: LockerDao,
     private val cartDao: CartDao
 ) {
-    // Flussi reattivi per osservare i dati direttamente dal database Room locale
+    // --- FLUSSI REATTIVI ---
     val allLockers: Flow<List<LockerEntity>> = lockerDao.getAll()
+
     val allTools: Flow<List<ToolEntity>> = toolDao.getAllTools()
     val allSlots: Flow<List<SlotEntity>> = slotDao.getAllSlots()
 
-    // Espone il flusso degli slot contrassegnati come preferiti localmente
-    val favoriteSlots: Flow<List<SlotEntity>> = slotDao.getFavoriteSlots()
+    // --- METODI DI ACCESSO AI DATI ---
+    suspend fun getAllLockersSnapshot(): List<LockerEntity> {
+        return lockerDao.getAll().first()
+    }
 
-    /**
-     * Recupera gli slot associati a un distributore specifico.
-     */
     fun getSlotsForLocker(lockerId: String): Flow<List<SlotEntity>> =
         slotDao.getSlotsByLocker(lockerId)
 
-    /**
-     * Gestisce il flag 'isFavorite' in Room senza coinvolgere il database remoto.
-     */
     suspend fun toggleSlotFavorite(slotId: String, isFavorite: Boolean) {
         slotDao.toggleFavorite(slotId, isFavorite)
     }
 
-    /**
-     * Sincronizza l'inventario globale preservando i dati locali (Shield logic).
-     * I dati salvati sul database locale vengono scritti per primi per garantire reattività.
-     */
+    // --- LOGICA DI SINCRONIZZAZIONE ---
     suspend fun syncFromNetwork() = coroutineScope {
-        // 1. Sync Strumenti (Catalogo generale)
+        // 1. Sync Strumenti
         launch {
             dataSource.observeTools().collectLatest { tools ->
                 if (tools.isNotEmpty()) {
@@ -49,15 +43,13 @@ class InventoryRepository(
             }
         }
 
-        // 2. Sync Slot con logica di protezione (Shield) per stato carrello e preferiti
+        // 2. Sync Slot con logica di protezione (Shield logic) per il carrello e i preferiti
         launch {
             dataSource.observeSlots().collectLatest { remoteSlots ->
                 if (remoteSlots.isNotEmpty()) {
-                    // Recuperiamo gli item attualmente nel carrello locale per proteggerne lo stato
                     val itemsInCart = cartDao.getAllCartItemsSnapshot()
                     val idsInCart = itemsInCart.map { it.slotId }.toSet()
 
-                    // Recuperiamo gli slot locali per preservare le preferenze dell'utente
                     val localSlots = slotDao.getAllSlots().firstOrNull() ?: emptyList()
                     val favoriteIds = localSlots.filter { it.isFavorite }.map { it.id }.toSet()
 
@@ -66,13 +58,10 @@ class InventoryRepository(
                         val isFav = favoriteIds.contains(slot.id)
 
                         slot.copy(
-                            // Se lo slot è nel carrello locale, forziamo lo stato corretto ignorando il network
                             status = if (inCart) "IN_CARRELLO" else slot.status,
-                            // Preserviamo sempre il flag preferito salvato localmente
                             isFavorite = isFav
                         )
                     }
-                    // Salvataggio atomico degli slot aggiornati nel database Room locale
                     slotDao.insertSlots(entities)
                 }
             }
@@ -88,9 +77,7 @@ class InventoryRepository(
         }
     }
 
-    /**
-     * Pulisce le tabelle locali dell'inventario.
-     */
+    //Pulisce la cache locale di Room per tutti i dati dell'inventario.
     suspend fun clearCache() {
         toolDao.clearAll()
         slotDao.clearAll()

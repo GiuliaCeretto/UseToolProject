@@ -1,164 +1,191 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.example.usetool.ui.screens
 
-import android.media.AudioManager
-import android.media.ToneGenerator
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import com.example.usetool.navigation.NavRoutes
+import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.ui.viewmodel.LinkingViewModel
 
 @Composable
-fun CollegamentoScreen(
+fun LinkingScreen(
     navController: NavController,
-    linkingViewModel: LinkingViewModel
+    viewModel: LinkingViewModel,
+    lockerIdsFromCart: List<Int>
 ) {
+    val inputCode by viewModel.inputCode.collectAsStateWithLifecycle()
+    val isLinked by viewModel.isLinked.collectAsStateWithLifecycle()
+    val connectedLockerName by viewModel.connectedLockerName.collectAsStateWithLifecycle()
+    val selectedLockerLinkId by viewModel.selectedLockerLinkId.collectAsStateWithLifecycle()
+    val availableLockers by viewModel.availableLockers.collectAsStateWithLifecycle()
 
-    val inputCode by linkingViewModel.inputCode.collectAsState()
-    val isLinked by linkingViewModel.isLinked.collectAsState()
-
-    var showDialog by remember { mutableStateOf(false) }
-
-    val toneGenerator = remember {
-        ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-    }
-
-    // Mappatura numero → frequenza (Hz simulata tramite TONE_DTMF)
-    fun playTone(number: Int) {
-        val tone = when (number) {
-            1 -> ToneGenerator.TONE_DTMF_1
-            2 -> ToneGenerator.TONE_DTMF_2
-            3 -> ToneGenerator.TONE_DTMF_3
-            4 -> ToneGenerator.TONE_DTMF_4
-            5 -> ToneGenerator.TONE_DTMF_5
-            6 -> ToneGenerator.TONE_DTMF_6
-            7 -> ToneGenerator.TONE_DTMF_7
-            8 -> ToneGenerator.TONE_DTMF_8
-            9 -> ToneGenerator.TONE_DTMF_9
-            else -> ToneGenerator.TONE_DTMF_0
-        }
-
-        toneGenerator.startTone(tone, 200)
+    LaunchedEffect(lockerIdsFromCart) {
+        viewModel.initLinking(lockerIdsFromCart)
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-
-        // BOX CODICE
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
+        if (isLinked) {
+            // --- SCENARIO C: SEI COLLEGATO ---
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF4CAF50),
+                    modifier = Modifier.size(100.dp)
+                )
+                Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Il tuo codice di collegamento è:",
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
+                    text = "COLLEGAMENTO RIUSCITO",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = "Sei collegato al $connectedLockerName",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Gray
                 )
 
-                Text(
-                    text = "2568",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                Spacer(Modifier.height(48.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
+                if (lockerIdsFromCart.isNotEmpty()) {
+                    Button(
+                        onClick = {
+                            selectedLockerLinkId?.let { id ->
+                                navController.navigate(NavRoutes.Pagamento.createRoute(id))
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
+                    ) {
+                        Text("PROCEDI AL PAGAMENTO", fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(16.dp))
+                }
 
-                Text(
-                    text = "Inserito: $inputCode",
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                TextButton(onClick = { viewModel.resetSelection() }) {
+                    Text("SCOLLEGATI / CAMBIA LOCKER", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
             }
-        }
 
+        } else if (selectedLockerLinkId == null) {
+            // --- SCENARIO A: SELEZIONE LOCKER ---
+            Text(
+                "Seleziona un Locker",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-        Spacer(modifier = Modifier.height(32.dp))
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(availableLockers) { locker ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clickable { viewModel.selectLocker(locker) },
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        ListItem(
+                            headlineContent = { Text("Locker #${locker.linkId} - ${locker.name}") },
+                            supportingContent = { Text(locker.address) },
+                            trailingContent = { Icon(Icons.Default.ArrowForwardIos, null, modifier = Modifier.size(16.dp)) }
+                        )
+                    }
+                }
+            }
+        } else {
+            // --- SCENARIO B: TASTIERINO PIN ---
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Lock, null, modifier = Modifier.size(64.dp), tint = BluePrimary)
+                    Text("Sblocco Locker", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Text("Digita il PIN del Locker #$selectedLockerLinkId", color = Color.Gray)
+                }
 
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    repeat(4) { index ->
+                        Box(
+                            modifier = Modifier.size(20.dp).clip(CircleShape)
+                                .background(if (inputCode.length > index) BluePrimary else Color.LightGray)
+                        )
+                    }
+                }
 
-        // TASTIERINO
+                // Tastierino (Omettiamo per brevità, resta uguale al tuo precedente)
+                TastierinoNumerico(viewModel)
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            for (row in 0..2) {
-                Row {
-                    for (col in 1..3) {
-                        val number = row * 3 + col
-                        Button(
-                            onClick = {
-                                playTone(number)
-                                linkingViewModel.addDigit(number)
-                            },
-                            modifier = Modifier
-                                .size(80.dp)
-                                .padding(8.dp),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(number.toString())
-                        }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    TextButton(onClick = { viewModel.resetSelection() }) {
+                        Text("Annulla", color = Color.Gray)
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // PULSANTE COLLEGA
-
-        Button(
-            onClick = {
-                if (linkingViewModel.checkCode()) {
-                    linkingViewModel.link()
-                    showDialog = true
-                } else {
-                    linkingViewModel.resetCode()
-                }
-            },
-            enabled = inputCode.length == 4,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Collega")
-        }
-    }
-
-    // POPUP SUCCESSO
-
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = {},
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDialog = false
-                        navController.navigate("home") {
-                            popUpTo("collegamento") { inclusive = true }
-                        }
-                    }
-                ) {
-                    Text("OK")
-                }
-            },
-            title = { Text("Successo") },
-            text = { Text("Collegamento avvenuto con successo") }
-        )
     }
 }
 
+@Composable
+fun TastierinoNumerico(viewModel: LinkingViewModel) {
+    val buttons = listOf(listOf(1, 2, 3), listOf(4, 5, 6), listOf(7, 8, 9), listOf(-1, 0, -2))
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        buttons.forEach { row ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                row.forEach { digit ->
+                    when {
+                        digit >= 0 -> KeyButton(digit.toString()) { viewModel.addDigit(digit) }
+                        digit == -2 -> IconButton(onClick = { viewModel.removeLastDigit() }) { Icon(Icons.Default.Backspace, null) }
+                        else -> Spacer(modifier = Modifier.size(72.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun KeyButton(text: String, onClick: () -> Unit) {
+    Surface(
+        modifier = Modifier
+            .size(72.dp)
+            .clip(CircleShape)
+            .clickable { onClick() },
+        color = Color(0xFFF5F5F5),
+        shape = CircleShape
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = text,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}

@@ -18,9 +18,10 @@ import com.example.usetool.data.service.Converters
         ExpertEntity::class,
         LockerEntity::class,
         PurchaseEntity::class,
-        RentalEntity::class
+        RentalEntity::class,
+        LinkEntity::class
     ],
-    version = 11,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -34,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun lockerDao(): LockerDao
     abstract fun purchaseDao(): PurchaseDao
     abstract fun rentalDao(): RentalDao
+    abstract fun linkDao(): LinkDao
 
     companion object {
         @Volatile

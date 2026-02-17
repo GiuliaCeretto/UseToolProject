@@ -10,6 +10,8 @@ data class ToolDTO(
     val pdfUrls: List<String> = emptyList(),
     val category: String = "",
     val price: Double = 0.0,
-    //val quantity: Int = 0,
+    val autonomia: String? = null,
+    val potenza: String? = null,
+    val peso: String? = null,
     val type: String = "noleggio" // "noleggio" o "acquisto"
 )

@@ -3,10 +3,10 @@ package com.example.usetool.ui.screens
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.usetool.R
 import com.example.usetool.data.dao.LockerEntity
 import com.example.usetool.navigation.NavRoutes
@@ -42,7 +43,6 @@ fun SearchScreen(
     searchVm: SearchViewModel,
     useToolVm: UseToolViewModel
 ) {
-
     val query by searchVm.query.collectAsStateWithLifecycle()
     val filteredTools by searchVm.filteredTools.collectAsStateWithLifecycle()
     val maxDistance by searchVm.maxDistance.collectAsStateWithLifecycle()
@@ -81,21 +81,18 @@ fun SearchScreen(
     }
 
     Scaffold(containerColor = Color(0xFFF8F9FA)) { padding ->
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-
-                // --- BARRA DI RICERCA SEMPRE VISIBILE ---
+                // --- BARRA DI RICERCA ---
                 var lockerQuery by remember { mutableStateOf("") }
                 OutlinedTextField(
                     value = if(selectedTab == 0) query else lockerQuery,
@@ -103,17 +100,21 @@ fun SearchScreen(
                         if(selectedTab == 0) searchVm.setQuery(it)
                         else lockerQuery = it
                     },
-                    placeholder = { Text(if(selectedTab==0) "Cerca attrezzi" else "Cerca distributori") },
+                    placeholder = { Text(if(selectedTab == 0) "Cerca attrezzi" else "Cerca distributori") },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
                 )
 
                 Spacer(Modifier.height(20.dp))
 
                 if (selectedTab == 0) {
-                    // --- LISTA ATTREZZI ---
+                    // --- TAB LISTA ATTREZZI ---
                     Surface(
                         color = BlueLight,
                         shape = RoundedCornerShape(16.dp),
@@ -155,24 +156,21 @@ fun SearchScreen(
                                 tool = tool,
                                 calculatedDistance = useToolVm.getDistanceForTool(tool.id),
                                 onClick = {
-                                    navController.navigate(
-                                        NavRoutes.SchedaStrumento.createRoute(tool.id)
-                                    )
+                                    navController.navigate(NavRoutes.SchedaStrumento.createRoute(tool.id))
                                 }
                             )
                         }
                     }
                 } else {
-                    // --- MAPPA ---
+                    // --- TAB MAPPA ---
                     val filteredLockers = remember(displayLockers, lockerQuery) {
                         if (lockerQuery.isBlank()) displayLockers
                         else displayLockers.filter { it.name.contains(lockerQuery, ignoreCase = true) }
                     }
 
-                    val allTools = tools.distinctBy { it.name }
-                    val columnsTools = allTools.chunked(3)
+                    val allToolsList = tools.distinctBy { it.name }
+                    val columnsTools = allToolsList.chunked(3)
 
-                    // Riquadro filtro con titolo incluso
                     Surface(
                         color = YellowMedium,
                         shape = RoundedCornerShape(16.dp),
@@ -206,21 +204,23 @@ fun SearchScreen(
 
                     Spacer(Modifier.height(16.dp))
 
-                    // Mappa rettangolare più lunga
+                    // Mappa con AsyncImage per caricamento dinamico
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(260.dp) // Altezza rettangolare, regolabile
+                            .height(260.dp)
                             .clip(RoundedCornerShape(20.dp))
                             .border(1.dp, Color.LightGray.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
                     ) {
-                        Image(
-                            painter = painterResource(R.drawable.placeholder_map),
+                        AsyncImage(
+                            model = "https://example.com/api/static-map-url", // Sostituire con URL reale
                             contentDescription = "Mappa",
-                            contentScale = ContentScale.Crop, // occupa tutto lo spazio, ritagliando solo se necessario
-                            modifier = Modifier.fillMaxSize()
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                            placeholder = painterResource(R.drawable.placeholder_map),
+                            error = painterResource(R.drawable.placeholder_map)
                         )
-                        // Pin più vicini tra loro (colonne più ravvicinate)
+
                         filteredLockers.forEachIndexed { index, locker ->
                             LockerPin(
                                 locker = locker,
@@ -251,35 +251,25 @@ fun LockerPin(
     totalLockers: Int,
     onClick: () -> Unit
 ) {
-    BoxWithConstraints(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val columns = 3
         val rows = ((totalLockers + columns - 1) / columns).coerceAtLeast(1)
-
         val colIndex = index % columns
         val rowIndex = index / columns
 
         val horizontalMargin = 0.1f
         val verticalMargin = 0.1f
-
-// colonne più vicine
         val baseX = horizontalMargin + colIndex * ((0.7f - 2 * horizontalMargin) / (columns - 1))
-
-// righe più vicine
         val rowSpacingFactor = 0.7f
         val baseY = verticalMargin + rowIndex * ((rowSpacingFactor - 2 * verticalMargin) / (rows - 1).coerceAtLeast(1))
 
         val xPercent = (baseX + Random.nextFloat() * 0.03f - 0.015f).coerceIn(horizontalMargin, 0.75f)
         val yPercent = (baseY + Random.nextFloat() * 0.02f - 0.01f).coerceIn(verticalMargin, rowSpacingFactor)
 
-        val xOffset = maxWidth * xPercent
-        val yOffset = maxHeight * yPercent
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .offset(x = xOffset, y = yOffset)
+                .offset(x = maxWidth * xPercent, y = maxHeight * yPercent)
                 .clickable { onClick() }
         ) {
             Icon(
@@ -302,6 +292,7 @@ fun LockerPin(
         }
     }
 }
+
 @Composable
 fun FloatingSwitcher(
     selectedTab: Int,

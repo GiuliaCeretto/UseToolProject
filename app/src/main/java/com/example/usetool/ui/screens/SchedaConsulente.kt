@@ -2,11 +2,12 @@ package com.example.usetool.ui.screens
 
 import android.content.Intent
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +23,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.usetool.R
 import com.example.usetool.ui.theme.*
 import com.example.usetool.ui.viewmodel.ExpertViewModel
@@ -48,18 +51,15 @@ fun SchedaConsulenteScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    // Rimosso il paddingValues.calculateTopPadding() per eliminare lo spazio in alto
                     .padding(bottom = paddingValues.calculateBottomPadding())
                     .padding(horizontal = 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Rimosso l'item con lo Spacer(24.dp) iniziale per far aderire il contenuto al bordo superiore
-
                 item {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 0.dp), // Assicura che la card parta da zero
+                            .padding(top = 0.dp),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         border = BorderStroke(1.dp, GreyLight.copy(alpha = 0.5f))
@@ -69,7 +69,7 @@ fun SchedaConsulenteScreen(
                                 .fillMaxWidth()
                                 .padding(20.dp)
                         ) {
-                            // Immagine Profilo
+                            // Immagine Profilo aggiornata con AsyncImage
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -77,11 +77,13 @@ fun SchedaConsulenteScreen(
                                     .background(color = Green2, shape = RoundedCornerShape(16.dp)),
                                 contentAlignment = Alignment.BottomCenter
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.placeholder_profilo),
-                                    contentDescription = null,
-                                    modifier = Modifier.fillMaxHeight(0.9f),
-                                    contentScale = ContentScale.Fit
+                                AsyncImage(
+                                    model = expert.imageUrl, // URL caricato dal database
+                                    contentDescription = "Foto di ${expert.firstName}",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop, // Crop per riempire bene il box del profilo
+                                    error = painterResource(id = R.drawable.placeholder_profilo), // Fallback in caso di errore
+                                    placeholder = painterResource(id = R.drawable.placeholder_profilo) // Immagine durante il caricamento
                                 )
                             }
 
@@ -142,7 +144,7 @@ fun SchedaConsulenteScreen(
 
                             Spacer(modifier = Modifier.height(32.dp))
 
-                            // Bottone Consulenza Verde Chiaro
+                            // Bottone Consulenza
                             Button(
                                 onClick = { showDialog = true },
                                 colors = ButtonDefaults.buttonColors(
@@ -182,7 +184,7 @@ fun SchedaConsulenteScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        showDialog = false   // Chiude il popup
+                        showDialog = false
                         val intent = Intent(Intent.ACTION_DIAL).apply {
                             data = "tel:${expert.phoneNumber}".toUri()
                         }
@@ -193,7 +195,7 @@ fun SchedaConsulenteScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = {
-                        showDialog = false   // ← QUESTA È LA PARTE CHE MANCAVA
+                        showDialog = false
                     }) {
                         Text("ANNULLA", color = GreyMedium)
                     }

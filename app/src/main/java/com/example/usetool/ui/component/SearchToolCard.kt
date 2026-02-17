@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.example.usetool.data.dao.ToolEntity
 import com.example.usetool.ui.theme.*
 import com.example.usetool.R
+import coil.compose.AsyncImage
 
 @Composable
 fun SearchToolCard(
@@ -56,10 +58,13 @@ fun SearchToolCard(
                         .fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.placeholder_tool),
-                        contentDescription = null,
-                        modifier = Modifier.size(80.dp)
+                    AsyncImage(
+                        model = tool.imageUrl, // URL internet
+                        contentDescription = tool.name,
+                        modifier = Modifier.size(80.dp),
+                        contentScale = ContentScale.Fit,
+                        error = painterResource(id = R.drawable.placeholder_tool),
+                        placeholder = painterResource(id = R.drawable.placeholder_tool)
                     )
                 }
 

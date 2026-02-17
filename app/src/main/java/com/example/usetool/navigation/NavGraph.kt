@@ -27,7 +27,6 @@ fun AppNavGraph(
         startDestination = NavRoutes.Login.route,
         modifier = modifier
     ) {
-
         composable(NavRoutes.Home.route) {
             HomeScreen(navController, useToolViewModel, userViewModel)
         }
@@ -37,9 +36,27 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Collegamento.route) {
-            CollegamentoScreen(
+            LinkingScreen(
                 navController = navController,
-                linkingViewModel = linkingViewModel
+                viewModel = linkingViewModel,
+                lockerIdsFromCart = emptyList() // Nessun filtro dal carrello
+            )
+        }
+
+        // Rotta per la navigazione filtrata dal Carrello
+        composable(
+            route = NavRoutes.Linking.route,
+            arguments = listOf(navArgument("lockerIds") { type = NavType.StringType })
+        ) { backStack ->
+            val idsString = backStack.arguments?.getString("lockerIds") ?: ""
+            val lockerIds = idsString.split(",")
+                .filter { it.isNotEmpty() }
+                .mapNotNull { it.toIntOrNull() }
+
+            LinkingScreen(
+                navController = navController,
+                viewModel = linkingViewModel,
+                lockerIdsFromCart = lockerIds
             )
         }
 
@@ -54,8 +71,6 @@ fun AppNavGraph(
         composable(NavRoutes.Carrello.route) {
             CarrelloScreen(navController, cartViewModel)
         }
-
-        // --- SCHERMATE DI DETTAGLIO ---
 
         composable(
             route = NavRoutes.SchedaConsulente.route,
@@ -81,8 +96,18 @@ fun AppNavGraph(
             SchedaDistributoreScreen(navController, id, useToolViewModel, cartViewModel)
         }
 
-        composable(NavRoutes.Pagamento.route) {
-            PagamentoScreen(navController, cartViewModel, userViewModel = userViewModel)
+        composable(
+            route = NavRoutes.Pagamento.route,
+            arguments = listOf(navArgument("lockerId") { type = NavType.IntType }) // Usiamo IntType per coerenza
+        ) { backStack ->
+            val lockerId = backStack.arguments?.getInt("lockerId") ?: 0
+
+            PagamentoScreen(
+                navController = navController,
+                cartViewModel = cartViewModel,
+                userViewModel = userViewModel,
+                lockerId = lockerId
+            )
         }
 
         composable(NavRoutes.Login.route) {
@@ -90,7 +115,7 @@ fun AppNavGraph(
         }
 
         composable(NavRoutes.Register.route) {
-            RegisterScreen(navController, userViewModel) //
+            RegisterScreen(navController, userViewModel)
         }
     }
 }

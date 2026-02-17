@@ -30,13 +30,23 @@ import kotlinx.coroutines.flow.collectLatest
 fun PagamentoScreen(
     navController: NavController,
     cartViewModel: CartViewModel,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    lockerId: Int
 ) {
-    val cartHeader by cartViewModel.cartHeader.collectAsStateWithLifecycle()
-    val cartItems by cartViewModel.cartItems.collectAsStateWithLifecycle()
+    // Osserviamo lo stato del carrello globale e lo stato di caricamento
+    val allCartItems by cartViewModel.cartItems.collectAsStateWithLifecycle()
     val isProcessing by cartViewModel.isProcessing.collectAsStateWithLifecycle()
-    val total = cartHeader?.totaleProvvisorio ?: 0.0
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Logica di filtraggio: selezioniamo solo gli articoli del locker attualmente sbloccato
+    val itemsToPay = remember(allCartItems, lockerId) {
+        allCartItems.filter { it.lockerId.toIntOrNull() == lockerId }
+    }
+
+    // Calcolo del totale parziale relativo ai soli articoli filtrati
+    val partialTotal = remember(itemsToPay) {
+        itemsToPay.sumOf { it.price * it.quantity }
+    }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
     var cardNumber by remember { mutableStateOf("") }
@@ -44,7 +54,7 @@ fun PagamentoScreen(
     var cvv by remember { mutableStateOf("") }
     var cardHolder by remember { mutableStateOf("") }
 
-    // Ascolta i messaggi dal ViewModel per gestire il successo o gli errori di rete
+    // Gestione dei messaggi di ritorno dal ViewModel
     LaunchedEffect(Unit) {
         cartViewModel.errorMessage.collectLatest { message ->
             if (message.contains("successo", ignoreCase = true)) {
@@ -58,7 +68,7 @@ fun PagamentoScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("PAGAMENTO", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
+                title = { Text("PAGAMENTO LOCKER #$lockerId", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
@@ -76,7 +86,7 @@ fun PagamentoScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp)
         ) {
-            // --- RIEPILOGO TOTALE ---
+            // Sezione riepilogo economico del locker specifico
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = BluePrimary),
@@ -84,9 +94,9 @@ fun PagamentoScreen(
                 elevation = CardDefaults.cardElevation(8.dp)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text("Totale da pagare", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
+                    Text("Totale per questo locker", color = Color.White.copy(alpha = 0.7f), fontSize = 12.sp)
                     Text(
-                        text = "€ ${"%.2f".format(total)}",
+                        text = "€ ${"%.2f".format(partialTotal)}",
                         style = MaterialTheme.typography.displaySmall,
                         color = Color.White,
                         fontWeight = FontWeight.Black
@@ -96,24 +106,40 @@ fun PagamentoScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- LISTA ARTICOLI NEL CARRELLO ---
-            Text("Riepilogo Ordine", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
+            Text("Articoli pronti al ritiro", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
             Spacer(modifier = Modifier.height(12.dp))
 
-            cartItems.forEach { item ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(item.toolName, color = Color.Gray, fontSize = 14.sp)
-                    Text("€ ${"%.2f".format(item.price)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            if (itemsToPay.isEmpty()) {
+                Text(
+                    "Nessun articolo trovato per questo locker.",
+                    color = Color.Red,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                itemsToPay.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(item.toolName, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+                            Text("Quantità: ${item.quantity}", color = Color.Gray, fontSize = 12.sp)
+                        }
+                        Text(
+                            "€ ${"%.2f".format(item.price * item.quantity)}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = BluePrimary
+                        )
+                    }
                 }
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.LightGray.copy(alpha = 0.5f))
 
-            // --- FORM DATI CARTA ---
-            Text("Dettagli Carta", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
+            Text("Metodo di Pagamento", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
@@ -165,31 +191,31 @@ fun PagamentoScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // --- BOTTONE DI AZIONE ---
+            // Bottone di azione che invia il lockerId al checkout parziale
             Button(
                 onClick = {
-                    // Avvia il processo di checkout che aggiorna stock e stati sul DB
-                    cartViewModel.performCheckout(onSuccess = { rentalIds ->
-                        // Per i noleggi, attiva i timer di gestione
-                        rentalIds.forEach { id ->
-                            userViewModel.startRental(id)
+                    cartViewModel.performCheckout(
+                        lockerId = lockerId,
+                        onSuccess = { rentalIds ->
+                            rentalIds.forEach { id -> userViewModel.startRental(id) }
                         }
-                    })
+                    )
                 },
-                enabled = cardNumber.length >= 16 && cvv.length >= 3 && cardHolder.isNotBlank() && !isProcessing,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = cardNumber.length >= 16 && cvv.length >= 3 && cardHolder.isNotBlank() && !isProcessing && itemsToPay.isNotEmpty(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107), contentColor = Color.Black)
             ) {
                 if (isProcessing) {
                     CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.Black, strokeWidth = 2.dp)
                 } else {
-                    Text("CONFERMA E PAGA", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                    Text("CONFERMA E PAGA € ${"%.2f".format(partialTotal)}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                 }
             }
         }
 
-        // --- DIALOG DI CONFERMA FINALE ---
         if (showSuccessDialog) {
             AlertDialog(
                 onDismissRequest = { },
@@ -203,11 +229,11 @@ fun PagamentoScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
                     ) {
-                        Text("TORNA ALLA HOME", color = Color.White)
+                        Text("VAI AI MIEI ORDINI", color = Color.White)
                     }
                 },
                 title = { Text("Pagamento Completato", fontWeight = FontWeight.Bold) },
-                text = { Text("Il tuo pagamento è andato a buon fine. Gli strumenti acquistati sono ora pronti per il ritiro e i noleggi sono stati attivati.") },
+                text = { Text("Il locker #$lockerId è stato sbloccato correttamente. Puoi procedere al ritiro. Gli altri articoli restano nel tuo carrello.") },
                 shape = RoundedCornerShape(16.dp),
                 containerColor = Color.White
             )
@@ -215,7 +241,6 @@ fun PagamentoScreen(
     }
 }
 
-// Formattatore per il numero della carta (aggiunge spazi ogni 4 cifre)
 class CreditCardTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val trimmed = if (text.text.length >= 16) text.text.substring(0..15) else text.text

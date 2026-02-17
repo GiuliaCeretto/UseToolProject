@@ -20,7 +20,8 @@ data class LockerEntity(
     val saleSlotsCount: Int,
     val rentalSlotsCount: Int,
     val macAddress: String,
-    val toolIds: List<String> // Richiede il Converter
+    val toolIds: List<String>,
+    val linkId: Int = 0
 )
 
 @Dao

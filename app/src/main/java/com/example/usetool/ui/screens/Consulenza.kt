@@ -1,7 +1,6 @@
 package com.example.usetool.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.usetool.R
 import com.example.usetool.data.dao.ExpertEntity
 import com.example.usetool.navigation.NavRoutes
@@ -84,7 +84,7 @@ fun Consulenza(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo di ricerca COMPATTO (Altezza 48dp)
+            // Campo di ricerca COMPATTO
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -210,11 +210,14 @@ fun ConsultantCardCompact(
                     .background(Green2),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.placeholder_profilo),
-                    contentDescription = null,
+                // Utilizzo di AsyncImage per caricare l'immagine da URL
+                AsyncImage(
+                    model = expert.imageUrl,
+                    contentDescription = "Foto di ${expert.firstName}",
                     modifier = Modifier.fillMaxHeight(0.85f),
-                    contentScale = ContentScale.Fit
+                    contentScale = ContentScale.Fit,
+                    placeholder = painterResource(id = R.drawable.placeholder_profilo),
+                    error = painterResource(id = R.drawable.placeholder_profilo)
                 )
             }
 
