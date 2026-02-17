@@ -2,10 +2,7 @@ package com.example.usetool.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -45,10 +42,11 @@ fun SchedaDistributoreScreen(
     val locker = lockers.find { it.id == id }
     val allTools by viewModel.topTools.collectAsStateWithLifecycle()
     val allSlots by viewModel.slots.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
 
-    // Stato di caricamento centralizzato dal ViewModel
     val isCartProcessing by cartVM.isProcessing.collectAsStateWithLifecycle()
+    val myCartItems by cartVM.cartItems.collectAsStateWithLifecycle()
+
+    val scope = rememberCoroutineScope()
 
     val lockerSlots = remember(allSlots, id) {
         allSlots.filter { it.lockerId == id }
@@ -81,7 +79,6 @@ fun SchedaDistributoreScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 8.dp),
             ) {
-                // Handle del BottomSheet
                 Box(
                     Modifier
                         .padding(top = 4.dp)
@@ -93,9 +90,7 @@ fun SchedaDistributoreScreen(
                 )
 
                 Spacer(Modifier.height(12.dp))
-
                 LockerHeaderCard(locker)
-
                 Spacer(Modifier.height(12.dp))
 
                 Text(
@@ -106,38 +101,59 @@ fun SchedaDistributoreScreen(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // Lista Strumenti
                 toolsInLocker.forEach { tool ->
                     val slot = lockerSlots.find { it.toolId == tool.id }
-                    val isActuallyInCart = slot?.status == "IN_CARRELLO"
-                    val isAvailable = slot?.status == "DISPONIBILE" && slot.quantity > 0
+
+                    // 1. Identificazione tipo
+                    val isRental = tool.type.trim().contains("rent", ignoreCase = true) ||
+                            tool.type.trim().contains("noleggio", ignoreCase = true)
+
+                    val isActuallyInMyCart = myCartItems.any { it.slotId == slot?.id }
+
+                    // 2. Logica condizionale: Rental blocca se in altri carrelli, Acquisto no
+                    val isOccupiedByOthers = isRental && (slot?.status == "IN_CARRELLO") && !isActuallyInMyCart
+
+                    val isAvailableToMe = if (isRental) {
+                        slot?.status == "DISPONIBILE" && !isOccupiedByOthers
+                    } else {
+                        (slot?.quantity ?: 0) > 0
+                    }
 
                     Box(
                         modifier = Modifier
                             .padding(vertical = 4.dp)
-                            .alpha(if (isAvailable || isActuallyInCart) 1.0f else 0.4f)
-                            .clickable {
+                            .alpha(if (isAvailableToMe || isActuallyInMyCart) 1.0f else 0.4f)
+                            .clickable(enabled = isAvailableToMe || isActuallyInMyCart) {
                                 navController.navigate(NavRoutes.SchedaStrumento.createRoute(tool.id))
                             }
                     ) {
-                        DistributorToolRow(
-                            tool = tool,
-                            checked = isActuallyInCart || (selected[tool.id] == true),
-                            available = isAvailable,
-                            isAlreadyInCart = isActuallyInCart,
-                            onCheckedChange = { isChecked ->
-                                // Impedisce modifiche se il carrello sta già elaborando un'operazione batch
-                                if (isAvailable && !isCartProcessing) {
-                                    selected[tool.id] = isChecked
+                        Column {
+                            DistributorToolRow(
+                                tool = tool,
+                                checked = isActuallyInMyCart || (selected[tool.id] == true),
+                                available = isAvailableToMe,
+                                isAlreadyInCart = isActuallyInMyCart,
+                                onCheckedChange = { isChecked ->
+                                    if (isAvailableToMe && !isCartProcessing) {
+                                        selected[tool.id] = isChecked
+                                    }
                                 }
+                            )
+
+                            if (isOccupiedByOthers) {
+                                Text(
+                                    text = "Momentaneamente nel carrello di un altro utente",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.Red.copy(alpha = 0.6f),
+                                    modifier = Modifier.padding(start = 72.dp, bottom = 4.dp)
+                                )
                             }
-                        )
+                        }
                     }
                 }
 
                 Spacer(Modifier.height(20.dp))
 
-                // Filtriamo i prodotti selezionati e validi per l'aggiunta batch
                 val toolsToAdd = selected.filter { it.value }.mapNotNull { (toolId, _) ->
                     val tool = allTools.find { it.id == toolId }
                     val slot = lockerSlots.find { it.toolId == toolId && it.status == "DISPONIBILE" }
@@ -148,9 +164,7 @@ fun SchedaDistributoreScreen(
                 val distance = viewModel.getDistanceToLocker(locker)
 
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -170,10 +184,7 @@ fun SchedaDistributoreScreen(
                         modifier = Modifier.height(56.dp).fillMaxWidth(0.7f),
                         onClick = {
                             scope.launch {
-                                // 1. Eseguiamo l'aggiunta batch atomica tramite il ViewModel
                                 cartVM.addMultipleToolsToCart(toolsToAdd)
-
-                                // 2. Navighiamo immediatamente al carrello
                                 navController.navigate(NavRoutes.Carrello.route)
                             }
                         }
@@ -198,9 +209,7 @@ fun SchedaDistributoreScreen(
             MapVisualization()
             IconButton(
                 onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(8.dp)
+                modifier = Modifier.statusBarsPadding().padding(8.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,

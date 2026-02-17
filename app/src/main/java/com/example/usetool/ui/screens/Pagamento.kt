@@ -197,7 +197,13 @@ fun PagamentoScreen(
                     cartViewModel.performCheckout(
                         lockerId = lockerId,
                         onSuccess = { rentalIds ->
+                            // Qui puoi aggiornare lo stato dei rental o altro
                             rentalIds.forEach { id -> userViewModel.startRental(id) }
+
+                            // Naviga direttamente alla schermata Ritiro
+                            navController.navigate(NavRoutes.Ritiro.route) {
+                                popUpTo(NavRoutes.Home.route) { inclusive = false }
+                            }
                         }
                     )
                 },
@@ -214,6 +220,7 @@ fun PagamentoScreen(
                     Text("CONFERMA E PAGA € ${"%.2f".format(partialTotal)}", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                 }
             }
+
         }
 
         if (showSuccessDialog) {

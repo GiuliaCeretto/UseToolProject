@@ -1,5 +1,8 @@
 package com.example.usetool.ui.screens
 
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioTrack
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -24,7 +26,55 @@ import androidx.navigation.NavController
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.ui.viewmodel.LinkingViewModel
+import kotlin.math.PI
+import kotlin.math.sin
 
+// -------------------- CLASS DTMF PLAYER --------------------
+class DTMFTonePlayer {
+
+    private val sampleRate = 44100
+    private val duration = 0.3
+
+    private val dtmfMap = mapOf(
+        '1' to Pair(697.0, 1209.0),
+        '2' to Pair(697.0, 1336.0),
+        '3' to Pair(697.0, 1477.0),
+        '4' to Pair(770.0, 1209.0),
+        '5' to Pair(770.0, 1336.0),
+        '6' to Pair(770.0, 1477.0),
+        '7' to Pair(852.0, 1209.0),
+        '8' to Pair(852.0, 1336.0),
+        '9' to Pair(852.0, 1477.0)
+        // Se vuoi 0, *, # puoi aggiungerli qui
+    )
+
+    fun playTone(key: Char) {
+        val frequencies = dtmfMap[key] ?: return
+        val (f1, f2) = frequencies
+        val numSamples = (duration * sampleRate).toInt()
+        val samples = ShortArray(numSamples)
+
+        for (i in samples.indices) {
+            val angle1 = 2.0 * PI * i * f1 / sampleRate
+            val angle2 = 2.0 * PI * i * f2 / sampleRate
+            val value = (sin(angle1) + sin(angle2)) / 2
+            samples[i] = (value * Short.MAX_VALUE).toInt().toShort()
+        }
+
+        val audioTrack = AudioTrack(
+            AudioManager.STREAM_MUSIC,
+            sampleRate,
+            AudioFormat.CHANNEL_OUT_MONO,
+            AudioFormat.ENCODING_PCM_16BIT,
+            samples.size * 2,
+            AudioTrack.MODE_STATIC
+        )
+        audioTrack.write(samples, 0, samples.size)
+        audioTrack.play()
+    }
+}
+
+// -------------------- SCREEN PRINCIPALE --------------------
 @Composable
 fun LinkingScreen(
     navController: NavController,
@@ -139,7 +189,7 @@ fun LinkingScreen(
                     }
                 }
 
-                // Tastierino (Omettiamo per brevità, resta uguale al tuo precedente)
+                // Tastierino con toni DTMF integrati
                 TastierinoNumerico(viewModel)
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -152,24 +202,44 @@ fun LinkingScreen(
     }
 }
 
+// -------------------- TASTIERINO NUMERICO --------------------
 @Composable
 fun TastierinoNumerico(viewModel: LinkingViewModel) {
-    val buttons = listOf(listOf(1, 2, 3), listOf(4, 5, 6), listOf(7, 8, 9), listOf(-1, 0, -2))
+    val buttons = listOf(
+        listOf('1', '2', '3'),
+        listOf('4', '5', '6'),
+        listOf('7', '8', '9')
+    )
+    val tonePlayer = remember { DTMFTonePlayer() }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         buttons.forEach { row ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                row.forEach { digit ->
-                    when {
-                        digit >= 0 -> KeyButton(digit.toString()) { viewModel.addDigit(digit) }
-                        digit == -2 -> IconButton(onClick = { viewModel.removeLastDigit() }) { Icon(Icons.Default.Backspace, null) }
-                        else -> Spacer(modifier = Modifier.size(72.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                row.forEach { key ->
+                    KeyButton(key.toString()) {
+                        viewModel.addDigit(key.digitToInt())
+                        tonePlayer.playTone(key) // riproduce il tono DTMF
                     }
                 }
+            }
+        }
+
+        // Backspace
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            IconButton(onClick = { viewModel.removeLastDigit() }) {
+                Icon(Icons.Default.Backspace, contentDescription = "Backspace")
             }
         }
     }
 }
 
+// -------------------- PULSANTE SINGOLO --------------------
 @Composable
 fun KeyButton(text: String, onClick: () -> Unit) {
     Surface(

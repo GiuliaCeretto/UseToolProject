@@ -205,9 +205,9 @@ fun SchedaStrumentoScreen(
 
                     Spacer(Modifier.height(20.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SpecCard("Potenza", "18 V", Modifier.weight(1f))
-                        SpecCard("Autonomia", "2-3 ore", Modifier.weight(1f))
-                        SpecCard("Peso", "1.5 Kg", Modifier.weight(1f))
+                        SpecCard("Potenza", tool.potenza ?: "N/D", Modifier.weight(1f))
+                        SpecCard("Autonomia", tool.autonomia ?: "N/D", Modifier.weight(1f))
+                        SpecCard("Peso", tool.peso ?: "N/D", Modifier.weight(1f))
                     }
 
                     Spacer(Modifier.height(20.dp))

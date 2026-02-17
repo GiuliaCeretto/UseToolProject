@@ -1,6 +1,6 @@
 package com.example.usetool.ui.component
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,15 +14,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.usetool.R
 import com.example.usetool.data.dao.ToolEntity
-import coil.compose.AsyncImage
 
 @Composable
 fun ToolCardSmall(
     tool: ToolEntity,
     onClick: () -> Unit
 ) {
+    // Lista dei dati tecnici filtrando solo valori non nulli e non vuoti
+    val technicalData = listOf(
+        "Autonomia" to (tool.autonomia?.takeIf { it.isNotBlank() } ?: "-"),
+        "Potenza" to (tool.potenza?.takeIf { it.isNotBlank() } ?: "-"),
+        "Peso" to (tool.peso?.takeIf { it.isNotBlank() } ?: "-")
+    )
+
     Card(
         modifier = Modifier
             .width(160.dp)
@@ -33,6 +40,7 @@ fun ToolCardSmall(
     ) {
         Box {
             Column(modifier = Modifier.padding(8.dp)) {
+                // Immagine strumento
                 AsyncImage(
                     model = tool.imageUrl,
                     contentDescription = tool.name,
@@ -45,6 +53,8 @@ fun ToolCardSmall(
                     placeholder = painterResource(id = R.drawable.placeholder_tool)
                 )
 
+                Spacer(modifier = Modifier.height(4.dp))
+
                 Text(
                     text = tool.name,
                     fontWeight = FontWeight.Bold,
@@ -53,25 +63,65 @@ fun ToolCardSmall(
                 )
 
                 Text(
-                    text = tool.category,
+                    text = tool.category.ifBlank { "-" },
                     color = Color.Gray,
                     fontSize = 11.sp
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Prezzo dinamico (senza bottone)
+                // Dati tecnici (solo se presenti)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(4.dp) // Spazio tra le righe
+                ) {
+                    // Divider prima dei dati tecnici
+                    Divider(
+                        color = Color.Gray.copy(alpha = 0.3f),
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    technicalData.forEach { entry ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = entry.first,
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp)
+                            )
+                            Text(
+                                text = entry.second,
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 12.sp),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    // Divider dopo i dati tecnici
+                    Divider(
+                        color = Color.Gray.copy(alpha = 0.3f),
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+            // Prezzo
                 Text(
-                    text = if (tool.type == "noleggio") "€${tool.price}/ora" else "€${tool.price}",
+                    text = if (tool.type.lowercase() == "noleggio") "€${tool.price}/ora" else "€${tool.price}",
                     color = Color(0xFF1A237E),
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 15.sp
                 )
             }
 
-            // Badge Tipologia (Acquisto vs Noleggio)
-            val badgeColor = if (tool.type == "noleggio") Color(0xFFE3F2FD) else Color(0xFFFFF8E1)
-            val textColor = if (tool.type == "noleggio") Color(0xFF1976D2) else Color(0xFFFFA000)
+            // Badge tipo strumento (noleggio/acquisto)
+            val badgeColor = if (tool.type.lowercase() == "noleggio") Color(0xFFE3F2FD) else Color(0xFFFFF8E1)
+            val textColor = if (tool.type.lowercase() == "noleggio") Color(0xFF1976D2) else Color(0xFFFFA000)
 
             Surface(
                 color = badgeColor,
@@ -87,24 +137,5 @@ fun ToolCardSmall(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun InfoColumn(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.Gray,
-            fontSize = 10.sp
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
-            fontSize = 11.sp
-        )
     }
 }

@@ -35,6 +35,7 @@ class UseToolViewModel(
     val slots = inventoryRepository.allSlots
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+
     /**
      * StateFlow per i Preferiti.
      * Reagisce istantaneamente quando toggleFavorite viene chiamato.

@@ -21,7 +21,7 @@ import com.example.usetool.data.service.Converters
         RentalEntity::class,
         LinkEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

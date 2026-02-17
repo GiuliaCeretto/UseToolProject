@@ -2,11 +2,14 @@ package com.example.usetool.navigation
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import com.example.usetool.data.service.toPurchaseEntity
 import com.example.usetool.ui.screens.*
 import com.example.usetool.ui.viewmodel.*
 
@@ -20,6 +23,8 @@ fun AppNavGraph(
     userViewModel: UserViewModel,
     expertViewModel: ExpertViewModel,
     linkingViewModel: LinkingViewModel,
+    //purchaseViewModel: PurchaseViewModel,
+    //rentalViewModel: RentalViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -39,11 +44,10 @@ fun AppNavGraph(
             LinkingScreen(
                 navController = navController,
                 viewModel = linkingViewModel,
-                lockerIdsFromCart = emptyList() // Nessun filtro dal carrello
+                lockerIdsFromCart = emptyList()
             )
         }
 
-        // Rotta per la navigazione filtrata dal Carrello
         composable(
             route = NavRoutes.Linking.route,
             arguments = listOf(navArgument("lockerIds") { type = NavType.StringType })
@@ -98,7 +102,7 @@ fun AppNavGraph(
 
         composable(
             route = NavRoutes.Pagamento.route,
-            arguments = listOf(navArgument("lockerId") { type = NavType.IntType }) // Usiamo IntType per coerenza
+            arguments = listOf(navArgument("lockerId") { type = NavType.IntType })
         ) { backStack ->
             val lockerId = backStack.arguments?.getInt("lockerId") ?: 0
 
@@ -107,6 +111,19 @@ fun AppNavGraph(
                 cartViewModel = cartViewModel,
                 userViewModel = userViewModel,
                 lockerId = lockerId
+            )
+        }
+
+        // ------------------ ROTTA RITIRO ------------------
+        composable(NavRoutes.Ritiro.route) {
+            val cartItems by cartViewModel.cartItems.collectAsStateWithLifecycle()
+
+            val purchaseList = cartItems.map { it.toPurchaseEntity() }
+
+            RitiroScreen(
+                navController = navController,
+                purchases = purchaseList,
+                rentals = emptyList()
             )
         }
 

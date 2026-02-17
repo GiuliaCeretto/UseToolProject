@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,15 +24,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.usetool.R
 import com.example.usetool.data.dao.LockerEntity
 import com.example.usetool.data.dao.ToolEntity
 import com.example.usetool.navigation.NavRoutes
-import com.example.usetool.ui.component.*
+import com.example.usetool.ui.component.ToolCardSmall
+import com.example.usetool.ui.component.LockerCardSmall
+import com.example.usetool.ui.theme.YellowPrimary
 import com.example.usetool.ui.viewmodel.UserViewModel
 import com.example.usetool.ui.viewmodel.UseToolViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.merge
+import kotlin.random.Random
 
 @Composable
 fun HomeScreen(
@@ -41,7 +46,6 @@ fun HomeScreen(
 ) {
     val tools by vm.topTools.collectAsStateWithLifecycle()
     val lockers by vm.lockers.collectAsStateWithLifecycle()
-    // Recuperiamo la lista reale dei preferiti dal ViewModel
     val favoriteTools by vm.favoriteTools.collectAsStateWithLifecycle()
 
     val density = LocalDensity.current
@@ -76,17 +80,15 @@ fun HomeScreen(
 
             item {
                 when (selectedTab) {
-                    0 -> ToolRow(tools, navController) // Popolari
+                    0 -> ToolRow(tools, navController)
                     1 -> {
-                        // LOGICA AGGIORNATA: Se la lista è vuota mostra il placeholder,
-                        // altrimenti mostra i preferiti reali
                         if (favoriteTools.isEmpty()) {
                             FavoriteToolsSection()
                         } else {
                             ToolRow(favoriteTools, navController)
                         }
                     }
-                    2 -> LockerRow(lockers, vm, navController) // Vicini a te
+                    2 -> LockerRow(lockers, vm, navController) // Lista distributori orizzontale
                 }
             }
 
@@ -100,10 +102,13 @@ fun HomeScreen(
                     )
                     Spacer(Modifier.height(8.dp))
                     Card(
-                        modifier = Modifier.fillMaxWidth().height(250.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(260.dp),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
+                            // Mappa placeholder
                             Image(
                                 painter = painterResource(R.drawable.placeholder_map),
                                 contentDescription = "Mappa",
@@ -111,38 +116,85 @@ fun HomeScreen(
                                 modifier = Modifier.fillMaxSize()
                             )
 
-                            val userPos = Offset(350f, 750f)
-                            val lockerPos = Offset(650f, 450f)
-
-                            Image(
-                                painter = painterResource(id = R.drawable.pin),
-                                contentDescription = "La tua posizione",
+                            // Posizione utente al centro
+                            Box(
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .offset(
-                                        x = with(density) { userPos.x.toDp() - 16.dp },
-                                        y = with(density) { userPos.y.toDp() - 32.dp }
-                                    )
-                            )
+                                    .fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = "La tua posizione",
+                                    tint = YellowPrimary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
 
-                            lockers.forEach { locker ->
-                                Image(
-                                    painter = painterResource(id = R.drawable.pin),
-                                    contentDescription = locker.name,
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .offset(
-                                            x = with(density) { lockerPos.x.toDp() - 20.dp },
-                                            y = with(density) { lockerPos.y.toDp() - 40.dp }
+                            // Pin distributori sulla mappa
+                            lockers.forEachIndexed { index, locker ->
+                                LockerPinHome(
+                                    locker = locker,
+                                    index = index,
+                                    totalLockers = lockers.size,
+                                    onClick = {
+                                        navController.navigate(
+                                            NavRoutes.SchedaDistributore.createRoute(locker.id)
                                         )
-                                        .clickable {
-                                            navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
-                                        }
+                                    }
                                 )
                             }
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun LockerPinHome(
+    locker: LockerEntity,
+    index: Int,
+    totalLockers: Int,
+    onClick: () -> Unit
+) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val columns = 3
+        val rows = ((totalLockers + columns - 1) / columns).coerceAtLeast(1)
+        val colIndex = index % columns
+        val rowIndex = index / columns
+
+        val horizontalMargin = 0.1f
+        val verticalMargin = 0.1f
+        val rowSpacingFactor = 0.7f
+        val baseX = horizontalMargin + colIndex * ((0.7f - 2 * horizontalMargin) / (columns - 1))
+        val baseY = verticalMargin + rowIndex * ((rowSpacingFactor - 2 * verticalMargin) / (rows - 1).coerceAtLeast(1))
+
+        val xPercent = (baseX + Random.nextFloat() * 0.03f - 0.015f).coerceIn(horizontalMargin, 0.75f)
+        val yPercent = (baseY + Random.nextFloat() * 0.02f - 0.01f).coerceIn(verticalMargin, rowSpacingFactor)
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .offset(x = maxWidth * xPercent, y = maxHeight * yPercent)
+                .clickable { onClick() }
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = locker.name,
+                tint = Color(0xFF1976D2),
+                modifier = Modifier.size(30.dp)
+            )
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+            ) {
+                Text(
+                    locker.name,
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
             }
         }
     }
@@ -179,14 +231,14 @@ fun HomeSwitcher(selectedTab: Int, onTabSelected: (Int) -> Unit) {
 @Composable
 fun ToolRow(tools: List<ToolEntity>, navController: NavController) {
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(12.dp), // Spaziatura migliorata per scannabilità
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(horizontal = 4.dp)
     ) {
-        items(tools.take(5)) { tool ->
+        items(tools.take(5)) { toolEntity ->
             ToolCardSmall(
-                tool = tool,
+                tool = toolEntity,
                 onClick = {
-                    navController.navigate(NavRoutes.SchedaStrumento.createRoute(tool.id))
+                    navController.navigate(NavRoutes.SchedaStrumento.createRoute(toolEntity.id))
                 }
             )
         }
@@ -202,7 +254,7 @@ fun LockerRow(lockers: List<LockerEntity>, vm: UseToolViewModel, navController: 
         items(lockers.take(5)) { locker ->
             LockerCardSmall(
                 locker = locker,
-                address = locker.address, // Passiamo la via
+                address = locker.address,
                 distanceKm = vm.getDistanceToLocker(locker),
                 onClick = {
                     navController.navigate(NavRoutes.SchedaDistributore.createRoute(locker.id))
@@ -211,18 +263,15 @@ fun LockerRow(lockers: List<LockerEntity>, vm: UseToolViewModel, navController: 
         }
     }
 }
+
 @Composable
 fun FavoriteToolsSection() {
-    // Nota: In un'app reale filtreresti i 'tools' in base a un flag isFavorite o una lista di ID.
-    // Qui simuliamo una lista vuota per mostrare il messaggio richiesto.
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Icona stellina per i preferiti
         Icon(
             imageVector = Icons.Default.Star,
             contentDescription = null,
@@ -237,4 +286,3 @@ fun FavoriteToolsSection() {
         )
     }
 }
-

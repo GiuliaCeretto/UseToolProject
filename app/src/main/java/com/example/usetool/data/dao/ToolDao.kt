@@ -20,7 +20,9 @@ data class ToolEntity(
     val imageUrl: String?, // Aggiunto per Firebase Storage
     val videoUrl: String,
     val pdfUrls: List<String>, // Richiede il Converter
-    //val quantity: Int
+    val autonomia: String? = null,
+    val potenza: String? = null,
+    val peso: String? = null
 )
 
 @Dao

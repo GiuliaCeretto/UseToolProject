@@ -14,20 +14,26 @@ fun ToolDTO.toEntity(): ToolEntity = ToolEntity(
     imageResName = imageResName,
     imageUrl = imageUrl,
     videoUrl = videoUrl,
-    pdfUrls = pdfUrls
+    pdfUrls = pdfUrls,
+    autonomia = autonomia,
+    potenza = potenza,
+    peso = peso
 )
 
 fun ToolEntity.toDto(): ToolDTO = ToolDTO(
-    id = this.id,
-    name = this.name,
-    description = this.description,
-    price = this.price,
-    type = this.type,
-    category = this.category,
-    imageResName = this.imageResName,
-    imageUrl = this.imageUrl,
-    videoUrl = this.videoUrl,
-    pdfUrls = this.pdfUrls
+    id = id,
+    name = name,
+    description = description,
+    price = price,
+    type = type,
+    category = category,
+    imageResName = imageResName,
+    imageUrl = imageUrl,
+    videoUrl = videoUrl,
+    pdfUrls = pdfUrls,
+    autonomia = autonomia,
+    potenza = potenza,
+    peso = peso
 )
 
 fun List<ToolDTO>.toToolEntityList(): List<ToolEntity> = this.map { it.toEntity() }
@@ -188,6 +194,23 @@ fun CartEntity.toDto(itemsMap: Map<String, SlotDTO>): CartDTO = CartDTO(
     status = this.status,
     ultimoAggiornamento = this.ultimoAggiornamento
 )
+
+// --- MAPPER CART ITEM → PURCHASE ---
+fun CartItemEntity.toPurchaseEntity(): PurchaseEntity = PurchaseEntity(
+    id = slotId, // puoi usare slotId come ID univoco o generare un UUID se preferisci
+    userId = "", // eventualmente puoi passare l'userId se lo hai disponibile
+    cartId = cartId,
+    toolId = toolId,
+    toolName = toolName,
+    prezzoPagato = price,
+    dataAcquisto = System.currentTimeMillis(), // oppure passa la data reale se disponibile
+    dataRitiro = 0L, // da impostare quando necessario
+    dataRitiroEffettiva = null,
+    lockerId = lockerId,
+    slotId = slotId,
+    idTransazionePagamento = null
+)
+
 
 // --- LINK (Connessioni Locker) ---
 /**
