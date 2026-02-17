@@ -1,4 +1,3 @@
-// -------------------- RitiroScreen.kt --------------------
 package com.example.usetool.ui.screens
 
 import androidx.compose.foundation.background
@@ -14,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,34 +21,44 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.data.dao.PurchaseEntity
 import com.example.usetool.data.dao.RentalEntity
-import com.example.usetool.data.service.toPurchaseEntity
 import com.example.usetool.ui.theme.BluePrimary
-import com.example.usetool.ui.viewmodel.CartViewModel
+import com.example.usetool.ui.viewmodel.OrderViewModel
+import com.example.usetool.ui.viewmodel.UserViewModel
+import androidx.compose.runtime.getValue
 
-// -------------------- RitiroScreen.kt --------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RitiroScreen(
     navController: NavController,
-    cartViewModel: CartViewModel,
+    userViewModel: UserViewModel,
+    orderViewModel: OrderViewModel,
     lockerId: Int
 ) {
-    val allCartItems by cartViewModel.cartItems.collectAsStateWithLifecycle()
+    // Recupero UID utente (corretto con userProfile?.uid)
+    val userProfile by userViewModel.userProfile.collectAsStateWithLifecycle()
+    val userId = userProfile?.uid ?: ""
 
-    // 🔹 Filtra solo gli acquisti per il locker corrente
-    val purchases = allCartItems
-        .filter { it.lockerId == lockerId.toString() }
-        .map { it.toPurchaseEntity() }
+    // Osserviamo i dati reali dal database ordini
+    val allPurchases by orderViewModel.localPurchases.collectAsStateWithLifecycle()
+    val allRentals by orderViewModel.localRentals.collectAsStateWithLifecycle()
 
-    val rentals = emptyList<RentalEntity>() // Se non ci sono noleggi
+    // Filtriamo gli oggetti che devono essere mostrati in questa schermata
+    val purchasesToRetrieve = remember(allPurchases, lockerId) {
+        allPurchases.filter {
+            it.lockerId == lockerId.toString() && it.dataRitiroEffettiva == null
+        }
+    }
 
-    val retiredPurchases = remember { mutableStateMapOf<String, Boolean>() }
-    val retiredRentals = remember { mutableStateMapOf<String, Boolean>() }
+    val rentalsToRetrieve = remember(allRentals, lockerId) {
+        allRentals.filter {
+            it.lockerId == lockerId.toString() && it.dataRiconsegnaEffettiva == null
+        }
+    }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("RITIRO LOCKER #$lockerId", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                title = { Text("RITIRO LOCKER #$lockerId", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.White,
                     titleContentColor = BluePrimary
@@ -64,29 +74,38 @@ fun RitiroScreen(
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (purchases.isNotEmpty()) {
-                item { SectionHeader("Acquisti da Ritirare", Icons.Default.Inventory2) }
-                items(purchases) { purchase ->
+            // --- SEZIONE ACQUISTI ---
+            if (purchasesToRetrieve.isNotEmpty()) {
+                item { SectionHeader("Prodotti Acquistati", Icons.Default.Inventory2) }
+                items(purchasesToRetrieve) { purchase ->
                     RitiroPurchaseCard(
                         purchase = purchase,
-                        isRetired = retiredPurchases[purchase.id] ?: false,
-                        onRitiroClick = { retiredPurchases[purchase.id] = true }
+                        onRitiroClick = { orderViewModel.confirmPurchasePickup(userId, purchase.id) }
                     )
                 }
             }
 
-            if (rentals.isNotEmpty()) {
-                item { SectionHeader("Noleggi Attivi", Icons.Default.Timer) }
-                items(rentals) { rental ->
+            // --- SEZIONE NOLEGGI ---
+            if (rentalsToRetrieve.isNotEmpty()) {
+                item { SectionHeader("Strumenti a Noleggio", Icons.Default.Timer) }
+                items(rentalsToRetrieve) { rental ->
                     RitiroRentalCard(
                         rental = rental,
-                        isRetired = retiredRentals[rental.id] ?: false,
-                        onRitiroClick = { retiredRentals[rental.id] = true }
+                        onRitiroClick = { orderViewModel.confirmStartRental(userId, rental.id) }
                     )
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(24.dp)) }
+            // --- MESSAGGIO VUOTO ---
+            if (purchasesToRetrieve.isEmpty() && rentalsToRetrieve.isEmpty()) {
+                item {
+                    Box(Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
+                        Text("Nessun oggetto da ritirare qui.", color = Color.Gray)
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(20.dp)) }
 
             item {
                 Button(
@@ -95,7 +114,7 @@ fun RitiroScreen(
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
                 ) {
-                    Text("FINE RITIRO", fontWeight = FontWeight.Bold)
+                    Text("TORNA ALLA HOME", fontWeight = FontWeight.Bold, color = Color.White)
                 }
             }
         }
@@ -103,99 +122,55 @@ fun RitiroScreen(
 }
 
 @Composable
-fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+fun SectionHeader(title: String, icon: ImageVector) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
         Icon(icon, contentDescription = null, tint = BluePrimary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(8.dp))
-        Text(title, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = Color.DarkGray)
+        Text(title, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
     }
 }
 
-// CARD ACQUISTI
 @Composable
-fun RitiroPurchaseCard(
-    purchase: PurchaseEntity,
-    isRetired: Boolean,
-    onRitiroClick: () -> Unit
-) {
+fun RitiroPurchaseCard(purchase: PurchaseEntity, onRitiroClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
                 Text(purchase.toolName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(
-                    text = if (isRetired) "Ritirato con successo" else "Pronto nel locker",
-                    color = if (isRetired) Color(0xFF4CAF50) else Color.Gray,
-                    fontSize = 12.sp
-                )
+                Text("Acquisto definitivo", color = Color.Gray, fontSize = 12.sp)
             }
             Button(
                 onClick = onRitiroClick,
-                enabled = !isRetired,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRetired) Color.LightGray else Color(0xFFFFC107),
-                    contentColor = if (isRetired) Color.Gray else Color.Black
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
             ) {
-                if (isRetired) {
-                    Text("RITIRATO")
-                } else {
-                    Text("RITIRA")
-                }
+                Text("RITIRA")
             }
         }
     }
 }
 
-// CARD NOLEGGI
 @Composable
-fun RitiroRentalCard(
-    rental: RentalEntity,
-    isRetired: Boolean,
-    onRitiroClick: () -> Unit
-) {
+fun RitiroRentalCard(rental: RentalEntity, onRitiroClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
                 Text(rental.toolName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(
-                    text = if (isRetired) "Ritirato con successo" else "Noleggio attivo",
-                    color = if (isRetired) Color(0xFF4CAF50) else Color.Gray,
-                    fontSize = 12.sp
-                )
+                Text("Noleggio temporaneo", color = Color.Gray, fontSize = 12.sp)
             }
             Button(
                 onClick = onRitiroClick,
-                enabled = !isRetired,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isRetired) Color.LightGray else Color(0xFFFFC107),
-                    contentColor = if (isRetired) Color.Gray else Color.Black
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
             ) {
-                if (isRetired) {
-                    Text("RITIRATO")
-                } else {
-                    Text("RITIRA")
-                }
+                Text("AVVIA NOLEGGIO", color = Color.Black)
             }
         }
     }

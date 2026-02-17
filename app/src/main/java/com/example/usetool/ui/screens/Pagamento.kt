@@ -2,7 +2,6 @@ package com.example.usetool.ui.screens
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -20,14 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-import com.example.usetool.data.service.toPurchaseEntity
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.ui.viewmodel.CartViewModel
 import com.example.usetool.ui.viewmodel.UserViewModel
+import com.example.usetool.ui.viewmodel.OrderViewModel
 import kotlinx.coroutines.flow.collectLatest
-import kotlin.math.PI
-import kotlin.math.sin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,24 +32,20 @@ fun PagamentoScreen(
     navController: NavController,
     cartViewModel: CartViewModel,
     userViewModel: UserViewModel,
+    orderViewModel: OrderViewModel,
     lockerId: Int
 ) {
-    // 🔹 Tutti gli articoli nel carrello aggiornati
     val allCartItems by cartViewModel.cartItems.collectAsStateWithLifecycle()
-
-    // 🔹 Calcolo dinamico dei PurchaseEntity per questo locker
-    val purchaseList = allCartItems
-        .filter { it.lockerId.toIntOrNull() == lockerId }
-        .map { it.toPurchaseEntity() }
-
     val isProcessing by cartViewModel.isProcessing.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // 🔹 Lista dinamica di articoli filtrati dal locker
-    val itemsToPay = allCartItems.filter { it.lockerId.toIntOrNull() == lockerId }
+    val itemsToPay = remember(allCartItems) {
+        allCartItems.filter { it.lockerId == lockerId.toString() }
+    }
 
-    // 🔹 Totale dinamico
-    val partialTotal = itemsToPay.sumOf { it.price * it.quantity }
+    val partialTotal = remember(itemsToPay) {
+        itemsToPay.sumOf { it.price * it.quantity }
+    }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
     var cardNumber by remember { mutableStateOf("") }
@@ -60,7 +53,6 @@ fun PagamentoScreen(
     var cvv by remember { mutableStateOf("") }
     var cardHolder by remember { mutableStateOf("") }
 
-    // Gestione messaggi di ritorno dal ViewModel
     LaunchedEffect(Unit) {
         cartViewModel.errorMessage.collectLatest { message ->
             if (message.contains("successo", ignoreCase = true)) {
@@ -92,7 +84,6 @@ fun PagamentoScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp)
         ) {
-            // 🔹 Totale locker
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = BluePrimary),
@@ -112,42 +103,30 @@ fun PagamentoScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 🔹 Articoli del locker
-            Text("Articoli pronti al ritiro", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
+            Text("Articoli nel checkout", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
+
             Spacer(modifier = Modifier.height(12.dp))
 
             if (itemsToPay.isEmpty()) {
-                Text(
-                    "Nessun articolo trovato per questo locker.",
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text("Nessun articolo per questo locker.", color = Color.Red)
             } else {
                 itemsToPay.forEach { item ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(item.toolName, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-                            Text("Quantità: ${item.quantity}", color = Color.Gray, fontSize = 12.sp)
+                            Text("Q.tà: ${item.quantity}", color = Color.Gray, fontSize = 12.sp)
                         }
-                        Text(
-                            "€ ${"%.2f".format(item.price * item.quantity)}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = BluePrimary
-                        )
+                        Text("€ ${"%.2f".format(item.price * item.quantity)}", fontWeight = FontWeight.Bold, color = BluePrimary)
                     }
                 }
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.LightGray.copy(alpha = 0.5f))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.LightGray.copy(alpha = 0.3f))
 
-            // 🔹 Metodo pagamento
-            Text("Metodo di Pagamento", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
+            Text("Dettagli Carta", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.DarkGray)
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
@@ -157,8 +136,7 @@ fun PagamentoScreen(
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 visualTransformation = CreditCardTransformation(),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true
+                shape = RoundedCornerShape(16.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -169,8 +147,7 @@ fun PagamentoScreen(
                 label = { Text("Titolare Carta") },
                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = BluePrimary) },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true
+                shape = RoundedCornerShape(16.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -182,8 +159,7 @@ fun PagamentoScreen(
                     label = { Text("MM/AA") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 OutlinedTextField(
                     value = cvv,
@@ -192,66 +168,39 @@ fun PagamentoScreen(
                     modifier = Modifier.weight(1f),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     visualTransformation = PasswordVisualTransformation(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // 🔹 Bottone conferma
             Button(
                 onClick = {
                     cartViewModel.performCheckout(
                         lockerId = lockerId,
-                        onSuccess = { rentalIds ->
-                            // Avvia i noleggi
-                            rentalIds.forEach { id -> userViewModel.startRental(id) }
-
-                            // Aggiorna il carrello
-                            cartViewModel.refreshCart()
-
-                            // Naviga a RitiroScreen
-                            navController.navigate(NavRoutes.Ritiro.createRoute(lockerId))
+                        onSuccess = {
+                            navController.navigate(NavRoutes.Ritiro.createRoute(lockerId)) {
+                                // Corretto: PopUpTo con inclusive = false e riferimento a Carrello
+                                popUpTo(NavRoutes.Carrello.route) { inclusive = false }
+                            }
                         }
                     )
                 },
-                enabled = cardNumber.length >= 16 &&
-                        cvv.length >= 3 &&
-                        cardHolder.isNotBlank() &&
-                        !isProcessing &&
-                        itemsToPay.isNotEmpty()
-            ) {
-                Text("CONFERMA E PAGA € ${"%.2f".format(partialTotal)}")
-            }
-        }
-
-        if (showSuccessDialog) {
-            AlertDialog(
-                onDismissRequest = { },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showSuccessDialog = false
-                            navController.navigate(NavRoutes.Home.route) {
-                                popUpTo(NavRoutes.Home.route) { inclusive = true }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
-                    ) {
-                        Text("VAI AI MIEI ORDINI", color = Color.White)
-                    }
-                },
-                title = { Text("Pagamento Completato", fontWeight = FontWeight.Bold) },
-                text = { Text("Il locker #$lockerId è stato sbloccato correttamente. Puoi procedere al ritiro. Gli altri articoli restano nel tuo carrello.") },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                containerColor = Color.White
-            )
+                colors = ButtonDefaults.buttonColors(containerColor = BluePrimary),
+                enabled = cardNumber.length >= 16 && cardHolder.isNotBlank() && !isProcessing && itemsToPay.isNotEmpty()
+            ) {
+                if (isProcessing) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("PAGA ORA € ${"%.2f".format(partialTotal)}", fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
 
-// 🔹 Trasformazione per carta di credito
 class CreditCardTransformation : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val trimmed = if (text.text.length >= 16) text.text.substring(0..15) else text.text

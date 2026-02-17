@@ -2,14 +2,11 @@ package com.example.usetool.navigation
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
-import com.example.usetool.data.service.toPurchaseEntity
 import com.example.usetool.ui.screens.*
 import com.example.usetool.ui.viewmodel.*
 
@@ -23,8 +20,7 @@ fun AppNavGraph(
     userViewModel: UserViewModel,
     expertViewModel: ExpertViewModel,
     linkingViewModel: LinkingViewModel,
-    //purchaseViewModel: PurchaseViewModel,
-    //rentalViewModel: RentalViewModel,
+    orderViewModel: OrderViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -32,15 +28,20 @@ fun AppNavGraph(
         startDestination = NavRoutes.Login.route,
         modifier = modifier
     ) {
+        // --- HOME ---
         composable(NavRoutes.Home.route) {
             HomeScreen(navController, useToolViewModel, userViewModel)
         }
 
+        // --- RICERCA ---
         composable(NavRoutes.Search.route) {
             SearchScreen(navController, searchViewModel, useToolViewModel)
         }
 
+        // --- COLLEGAMENTO (LOCKER SELECTION) ---
         composable(NavRoutes.Collegamento.route) {
+            // Il tuo file si chiama LinkingViewModel, ma la schermata nel file Linking.kt
+            // probabilmente si chiama LinkingScreen (verifica se è LinkingScreen o CollegamentoScreen)
             LinkingScreen(
                 navController = navController,
                 viewModel = linkingViewModel,
@@ -49,6 +50,7 @@ fun AppNavGraph(
             )
         }
 
+        // --- LINKING (CON PIN) ---
         composable(
             route = NavRoutes.Linking.route,
             arguments = listOf(navArgument("lockerIds") { type = NavType.StringType })
@@ -66,34 +68,45 @@ fun AppNavGraph(
             )
         }
 
+        // --- CONSULENZA ---
         composable(NavRoutes.Consulenza.route) {
+            // Nei tuoi file la funzione si chiama Consulenza
             Consulenza(navController, expertViewModel)
         }
 
+        // --- PROFILO ---
         composable(NavRoutes.Profilo.route) {
+            // Nel tuo progetto si chiama ProfiloScreen
             ProfiloScreen(navController, userViewModel)
         }
 
+        // --- CARRELLO ---
         composable(NavRoutes.Carrello.route) {
+            // Nel tuo progetto si chiama CarrelloScreen
             CarrelloScreen(navController, cartViewModel)
         }
 
+        // --- SCHEDA CONSULENTE ---
         composable(
             route = NavRoutes.SchedaConsulente.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
+            // Nel tuo progetto si chiama SchedaConsulenteScreen
             SchedaConsulenteScreen(id, expertViewModel)
         }
 
+        // --- SCHEDA STRUMENTO ---
         composable(
             route = NavRoutes.SchedaStrumento.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
         ) { backStack ->
             val id = backStack.arguments?.getString("id") ?: ""
+            // Nel tuo progetto si chiama SchedaStrumentoScreen
             SchedaStrumentoScreen(navController, id, useToolViewModel, cartViewModel)
         }
 
+        // --- SCHEDA DISTRIBUTORE ---
         composable(
             route = NavRoutes.SchedaDistributore.route,
             arguments = listOf(navArgument("id") { type = NavType.StringType })
@@ -102,6 +115,7 @@ fun AppNavGraph(
             SchedaDistributoreScreen(navController, id, useToolViewModel, cartViewModel)
         }
 
+        // --- PAGAMENTO ---
         composable(
             route = NavRoutes.Pagamento.route,
             arguments = listOf(navArgument("lockerId") { type = NavType.IntType })
@@ -112,11 +126,12 @@ fun AppNavGraph(
                 navController = navController,
                 cartViewModel = cartViewModel,
                 userViewModel = userViewModel,
+                orderViewModel = orderViewModel,
                 lockerId = lockerId
             )
         }
 
-        // ------------------ ROTTA RITIRO ------------------
+        // --- RITIRO ---
         composable(
             route = NavRoutes.Ritiro.route,
             arguments = listOf(navArgument("lockerId") { type = NavType.IntType })
@@ -125,11 +140,13 @@ fun AppNavGraph(
 
             RitiroScreen(
                 navController = navController,
-                cartViewModel = cartViewModel,
+                userViewModel = userViewModel,
+                orderViewModel = orderViewModel,
                 lockerId = lockerId
             )
         }
 
+        // --- AUTH ---
         composable(NavRoutes.Login.route) {
             LoginScreen(navController, userViewModel)
         }

@@ -8,6 +8,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.usetool.data.service.Injection
 import com.example.usetool.navigation.AppNavGraph
@@ -22,6 +23,7 @@ class MainActivity : ComponentActivity() {
     private val cartVM: CartViewModel by viewModels()
     private val userVM: UserViewModel by viewModels()
     private val expertVM: ExpertViewModel by viewModels()
+    private val orderVM: OrderViewModel by viewModels()
     private val linkingVM: LinkingViewModel by viewModels()
 
     @OptIn(ExperimentalMaterial3Api::class)
@@ -46,12 +48,11 @@ class MainActivity : ComponentActivity() {
                         userViewModel = userVM,
                         expertViewModel = expertVM,
                         linkingViewModel = linkingVM,
+                        orderViewModel = orderVM,
                         modifier = Modifier.padding(padding)
                     )
                 }
             }
         }
     }
-
-
 }
