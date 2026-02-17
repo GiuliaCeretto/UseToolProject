@@ -129,7 +129,7 @@ fun SearchScreen(
                             Slider(
                                 value = maxDistance,
                                 onValueChange = { searchVm.setMaxDistance(it) },
-                                valueRange = 1f..100f,
+                                valueRange = 1f..10f,
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = SliderDefaults.colors(
                                     thumbColor = BluePrimary,

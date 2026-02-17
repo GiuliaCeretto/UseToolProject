@@ -42,7 +42,7 @@ fun ToolCardSmall(
             Column(modifier = Modifier.padding(8.dp)) {
                 // Immagine strumento
                 AsyncImage(
-                    model = tool.imageUrl,
+                    model = tool.imageResName,
                     contentDescription = tool.name,
                     modifier = Modifier
                         .fillMaxWidth()

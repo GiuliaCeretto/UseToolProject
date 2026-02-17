@@ -59,7 +59,7 @@ fun SearchToolCard(
                     contentAlignment = Alignment.Center
                 ) {
                     AsyncImage(
-                        model = tool.imageUrl, // URL internet
+                        model = tool.imageResName,
                         contentDescription = tool.name,
                         modifier = Modifier.size(80.dp),
                         contentScale = ContentScale.Fit,

@@ -187,7 +187,7 @@ fun LinkingScreen(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    repeat(4) { index ->
+                    repeat(5) { index ->
                         Box(
                             modifier = Modifier.size(20.dp).clip(CircleShape)
                                 .background(if (inputCode.length > index) BluePrimary else Color.LightGray)

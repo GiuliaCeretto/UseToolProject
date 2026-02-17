@@ -186,7 +186,7 @@ fun SchedaStrumentoScreen(
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             // Sostituzione con AsyncImage per caricamento da URL
                             AsyncImage(
-                                model = tool.imageUrl,
+                                model = tool.imageResName,
                                 contentDescription = tool.name,
                                 modifier = Modifier.fillMaxSize(0.8f),
                                 contentScale = ContentScale.Fit,

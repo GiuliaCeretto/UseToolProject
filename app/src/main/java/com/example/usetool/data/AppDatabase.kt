@@ -22,7 +22,7 @@ import com.example.usetool.data.service.Converters
         ArduinoEntity::class,
         LinkEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
