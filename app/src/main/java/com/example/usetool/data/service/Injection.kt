@@ -79,4 +79,14 @@ object Injection {
         dataSource = provideDataSource(),
         expertDao = getDb().expertDao()
     ).also { expertRepository = it }
+
+    fun provideArduinoRepository(): ArduinoRepository {
+        return arduinoRepository ?: run {
+            val remoteSource = ArduinoRemoteSource() // Sorgente Firebase
+            val dao = getDb().arduinoDao()          // Sorgente Room
+            val newRepo = ArduinoRepository(dao, remoteSource)
+            arduinoRepository = newRepo
+            newRepo
+        }
+    }
 }

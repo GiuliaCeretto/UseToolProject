@@ -17,4 +17,6 @@ class FirebaseProvider {
     fun getRentalsRef(): DatabaseReference = db.child("rentals")
     fun getCartsRef(): DatabaseReference = db.child("carts")
     fun getUsersRef(): DatabaseReference = db.child("users")
+
+    fun getArduinoRef(): DatabaseReference = db.child("arduino")
 }

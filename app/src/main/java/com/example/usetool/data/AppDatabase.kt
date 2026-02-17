@@ -36,6 +36,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun purchaseDao(): PurchaseDao
     abstract fun rentalDao(): RentalDao
     abstract fun linkDao(): LinkDao
+    abstract fun arduinoDao(): ArduinoDao
 
     companion object {
         @Volatile

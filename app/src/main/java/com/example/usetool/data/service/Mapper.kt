@@ -213,9 +213,6 @@ fun CartItemEntity.toPurchaseEntity(): PurchaseEntity = PurchaseEntity(
 
 
 // --- LINK (Connessioni Locker) ---
-/**
- * Mappatura per il log delle connessioni hardware.
- */
 fun LinkDTO.toEntity(): LinkEntity = LinkEntity(
     id = id,
     lockerId = lockerId, // Rappresenta il linkId (Int)
@@ -231,3 +228,11 @@ fun LinkEntity.toDto(): LinkDTO = LinkDTO(
 )
 
 fun List<LinkDTO>.toLinkEntityList(): List<LinkEntity> = this.map { it.toEntity() }
+
+
+// --  ARDUINO
+fun ArduinoStateDto.toEntity(): ArduinoEntity = ArduinoEntity(
+    isConnected = isConnected,
+    openBuyDoor = openBuyDoor,
+    openRentDoor = openRentDoor
+)
