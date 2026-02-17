@@ -25,18 +25,14 @@ class ArduinoViewModel(
         )
 
     init {
-        // Avvia la sincronizzazione tra Firebase e Room all'apertura del ViewModel
-        startFirebaseSync()
-    }
-
-    private fun startFirebaseSync() {
+        // 🔥 FONDAMENTALE: Avvia l'ascolto dei dati da Firebase verso Room
         viewModelScope.launch {
             repository.startSync()
         }
     }
 
     /**
-     * Azione per aprire la porta di noleggio
+     * Azione per aprire la porta di noleggio (Rental)
      */
     fun onOpenDoorClicked() {
         viewModelScope.launch {
@@ -45,7 +41,7 @@ class ArduinoViewModel(
     }
 
     /**
-     * Azione per l'acquisto dell'oggetto
+     * Azione per l'erogazione dell'oggetto (Purchase)
      */
     fun onGiveObjClicked() {
         viewModelScope.launch {
@@ -54,7 +50,7 @@ class ArduinoViewModel(
     }
 
     /**
-     * Reset manuale degli stati
+     * Reset manuale degli stati (chiude virtualmente le porte)
      */
     fun onResetRequested() {
         viewModelScope.launch {

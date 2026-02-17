@@ -77,4 +77,15 @@ class DataSource(private val dao: FirebaseProvider) {
     fun updateMultipleNodes(updates: Map<String, Any?>) {
         dao.getToolsRef().parent?.updateChildren(updates)
     }
+
+    // Nel DataSource.kt
+    suspend fun updateArduinoNode(path: String, value: Any?) {
+        // Punta direttamente a arduino -> openBuyDoor (o altro) e sovrascrive il valore
+        dao.getArduinoRef().child(path).setValue(value).await()
+    }
+
+    fun updateArduinoMultiple(updates: Map<String, Any?>) {
+        // updateChildren su "arduino" modifica solo le chiavi passate nella mappa
+        dao.getArduinoRef().updateChildren(updates)
+    }
 }
