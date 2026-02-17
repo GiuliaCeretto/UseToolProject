@@ -18,10 +18,6 @@ sealed class NavRoutes(val route: String) {
         fun createRoute(id: String) = "strumento/$id"
     }
 
-    object Pagamento : NavRoutes("pagamento/{lockerId}") {
-        fun createRoute(lockerId: Int) = "pagamento/$lockerId"
-    }
-
     object Linking : NavRoutes("linking/{lockerIds}") {
         fun createRoute(lockerIds: String) = "linking/$lockerIds"
     }
@@ -30,7 +26,10 @@ sealed class NavRoutes(val route: String) {
         fun createRoute(id: String) = "consulente/$id"
     }
 
-    object Ritiro : NavRoutes("ritiro") {
-        fun createRoute() = "ritiro"
+    object Pagamento : NavRoutes("pagamento/{lockerId}") {
+        fun createRoute(lockerId: Int) = "pagamento/$lockerId"
+    }
+    object Ritiro : NavRoutes("ritiro/{lockerId}") {
+        fun createRoute(lockerId: Int) = "ritiro/$lockerId"
     }
 }

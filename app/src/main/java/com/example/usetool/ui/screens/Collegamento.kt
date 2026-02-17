@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.theme.BluePrimary
+import com.example.usetool.ui.viewmodel.CartViewModel
 import com.example.usetool.ui.viewmodel.LinkingViewModel
 import kotlin.math.PI
 import kotlin.math.sin
@@ -79,7 +80,8 @@ class DTMFTonePlayer {
 fun LinkingScreen(
     navController: NavController,
     viewModel: LinkingViewModel,
-    lockerIdsFromCart: List<Int>
+    lockerIdsFromCart: List<Int>,
+    cartViewModel: CartViewModel
 ) {
     val inputCode by viewModel.inputCode.collectAsStateWithLifecycle()
     val isLinked by viewModel.isLinked.collectAsStateWithLifecycle()
@@ -126,6 +128,10 @@ fun LinkingScreen(
                     Button(
                         onClick = {
                             selectedLockerLinkId?.let { id ->
+                                // 🔹 Aggiorna il carrello prima di navigare
+                                cartViewModel.refreshCart()
+
+                                // 🔹 Naviga alla schermata di pagamento
                                 navController.navigate(NavRoutes.Pagamento.createRoute(id))
                             }
                         },

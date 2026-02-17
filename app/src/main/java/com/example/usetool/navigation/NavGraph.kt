@@ -44,7 +44,8 @@ fun AppNavGraph(
             LinkingScreen(
                 navController = navController,
                 viewModel = linkingViewModel,
-                lockerIdsFromCart = emptyList()
+                lockerIdsFromCart = emptyList(),
+                cartViewModel = cartViewModel
             )
         }
 
@@ -60,7 +61,8 @@ fun AppNavGraph(
             LinkingScreen(
                 navController = navController,
                 viewModel = linkingViewModel,
-                lockerIdsFromCart = lockerIds
+                lockerIdsFromCart = lockerIds,
+                cartViewModel = cartViewModel
             )
         }
 
@@ -115,15 +117,16 @@ fun AppNavGraph(
         }
 
         // ------------------ ROTTA RITIRO ------------------
-        composable(NavRoutes.Ritiro.route) {
-            val cartItems by cartViewModel.cartItems.collectAsStateWithLifecycle()
-
-            val purchaseList = cartItems.map { it.toPurchaseEntity() }
+        composable(
+            route = NavRoutes.Ritiro.route,
+            arguments = listOf(navArgument("lockerId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val lockerId = backStackEntry.arguments?.getInt("lockerId") ?: 0
 
             RitiroScreen(
                 navController = navController,
-                purchases = purchaseList,
-                rentals = emptyList()
+                cartViewModel = cartViewModel,
+                lockerId = lockerId
             )
         }
 
