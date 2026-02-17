@@ -19,6 +19,7 @@ import com.example.usetool.data.service.Converters
         LockerEntity::class,
         PurchaseEntity::class,
         RentalEntity::class,
+        ArduinoEntity::class,
         LinkEntity::class
     ],
     version = 14,

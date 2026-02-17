@@ -21,6 +21,7 @@ fun AppNavGraph(
     expertViewModel: ExpertViewModel,
     linkingViewModel: LinkingViewModel,
     orderViewModel: OrderViewModel,
+    arduinoViewModel: ArduinoViewModel,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -142,6 +143,7 @@ fun AppNavGraph(
                 navController = navController,
                 userViewModel = userViewModel,
                 orderViewModel = orderViewModel,
+                arduinoViewModel = arduinoViewModel,
                 lockerId = lockerId
             )
         }

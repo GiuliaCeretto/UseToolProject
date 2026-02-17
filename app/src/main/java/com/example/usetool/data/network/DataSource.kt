@@ -5,12 +5,12 @@ import com.google.firebase.database.*
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-
-//Prende i riferimenti dal FirebaseDao e li trasforma in Flow
+import kotlinx.coroutines.tasks.await
 
 class DataSource(private val dao: FirebaseProvider) {
 
-    //Funzione generica per osservare liste di dati su Firebase
+    // --- FUNZIONI GENERICHE PER FLOW ---
+
     private fun <T> observeList(ref: DatabaseReference, clazz: Class<T>): Flow<List<T>> = callbackFlow {
         val listener = ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -26,7 +26,6 @@ class DataSource(private val dao: FirebaseProvider) {
         awaitClose { ref.removeEventListener(listener) }
     }
 
-    //Funzione generica per osservare un singolo oggetto
     private fun <T> observeSingle(ref: DatabaseReference, clazz: Class<T>): Flow<T?> = callbackFlow {
         val listener = ref.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -39,26 +38,42 @@ class DataSource(private val dao: FirebaseProvider) {
         awaitClose { ref.removeEventListener(listener) }
     }
 
-    // Liste di dati - pubblici
+    // --- 1. LISTE PUBBLICHE (Catalogo e Community) ---
+
     fun observeTools(): Flow<List<ToolDTO>> = observeList(dao.getToolsRef(), ToolDTO::class.java)
     fun observeLockers(): Flow<List<LockerDTO>> = observeList(dao.getLockersRef(), LockerDTO::class.java)
-    fun observeExperts(): Flow<List<ExpertDTO>> = observeList(dao.getExpertsRef(), ExpertDTO::class.java)
     fun observeSlots(): Flow<List<SlotDTO>> = observeList(dao.getSlotsRef(), SlotDTO::class.java)
+    fun observeExperts(): Flow<List<ExpertDTO>> = observeList(dao.getExpertsRef(), ExpertDTO::class.java)
 
-    // Dato riferito al singolo utente - privato
-    fun observeUserCart(userId: String): Flow<CartDTO?> =
-        observeSingle(dao.getCartsRef().child(userId), CartDTO::class.java)
-    fun observePurchases(userId: String): Flow<List<PurchaseDTO>> =
-        observeList(dao.getPurchasesRef().child(userId), PurchaseDTO::class.java)
-    fun observeRentals(userId: String): Flow<List<RentalDTO>> =
-        observeList(dao.getRentalsRef().child(userId), RentalDTO::class.java)
+    // --- 2. DATI PRIVATI UTENTE (Profilo e Carrello) ---
+
     fun observeProfile(userId: String): Flow<UserDTO?> =
         observeSingle(dao.getUsersRef().child(userId), UserDTO::class.java)
-    // In DataSource.kt
-    fun observeArduinoState(): Flow<ArduinoStateDto?> =
+
+    fun observeUserCart(userId: String): Flow<CartDTO?> =
+        observeSingle(dao.getCartsRef().child(userId), CartDTO::class.java)
+
+    // --- 3. STORICO ORDINI (Purchases & Rentals) ---
+
+    fun observePurchases(userId: String): Flow<List<PurchaseDTO>> =
+        observeList(dao.getPurchasesRef().child(userId), PurchaseDTO::class.java)
+
+    fun observeRentals(userId: String): Flow<List<RentalDTO>> =
+        observeList(dao.getRentalsRef().child(userId), RentalDTO::class.java)
+
+    // --- 4. HARDWARE (Arduino) ---
+
+    fun observeArduino(): Flow<ArduinoStateDto?> =
         observeSingle(dao.getArduinoRef(), ArduinoStateDto::class.java)
 
-    // Funzione di Lettura
+    // --- 5. FUNZIONI DI SCRITTURA (Network Output) ---
+
+    // Scrittura singola (es: comando sblocco porta)
+    suspend fun updateNode(path: String, value: Any?) {
+        dao.getToolsRef().parent?.child(path)?.setValue(value)?.await()
+    }
+
+    // Scrittura multipla atomica (es: aggiorna carrello e stato slot insieme)
     fun updateMultipleNodes(updates: Map<String, Any?>) {
         dao.getToolsRef().parent?.updateChildren(updates)
     }

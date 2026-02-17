@@ -17,6 +17,8 @@ object Injection {
     private var userRepository: UserRepository? = null
     private var orderRepository: OrderRepository? = null
     private var expertRepository: ExpertRepository? = null
+
+    private var arduinoRepository: ArduinoRepository? = null
     private var linkRepo: LinkRepo? = null
 
     fun init(context: Context) {
@@ -80,13 +82,8 @@ object Injection {
         expertDao = getDb().expertDao()
     ).also { expertRepository = it }
 
-    fun provideArduinoRepository(): ArduinoRepository {
-        return arduinoRepository ?: run {
-            val remoteSource = ArduinoRemoteSource() // Sorgente Firebase
-            val dao = getDb().arduinoDao()          // Sorgente Room
-            val newRepo = ArduinoRepository(dao, remoteSource)
-            arduinoRepository = newRepo
-            newRepo
-        }
-    }
+    fun provideArduinoRepository() = arduinoRepository?: ArduinoRepository(
+        dataSource = provideDataSource(),
+        arduinoDao = getDb().arduinoDao(),
+    ).also { arduinoRepository = it }
 }

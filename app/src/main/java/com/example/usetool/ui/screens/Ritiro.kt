@@ -24,7 +24,7 @@ import com.example.usetool.data.dao.RentalEntity
 import com.example.usetool.ui.theme.BluePrimary
 import com.example.usetool.ui.viewmodel.OrderViewModel
 import com.example.usetool.ui.viewmodel.UserViewModel
-import androidx.compose.runtime.getValue
+import com.example.usetool.ui.viewmodel.ArduinoViewModel // Import aggiunto
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,17 +32,20 @@ fun RitiroScreen(
     navController: NavController,
     userViewModel: UserViewModel,
     orderViewModel: OrderViewModel,
+    arduinoViewModel: ArduinoViewModel, // ViewModel integrato
     lockerId: Int
 ) {
-    // Recupero UID utente (corretto con userProfile?.uid)
+    // Recupero dati utente e ordini
     val userProfile by userViewModel.userProfile.collectAsStateWithLifecycle()
     val userId = userProfile?.uid ?: ""
 
-    // Osserviamo i dati reali dal database ordini
     val allPurchases by orderViewModel.localPurchases.collectAsStateWithLifecycle()
     val allRentals by orderViewModel.localRentals.collectAsStateWithLifecycle()
 
-    // Filtriamo gli oggetti che devono essere mostrati in questa schermata
+    // Osserviamo lo stato dell'hardware dal DB locale tramite il ViewModel
+    val arduinoStatus by arduinoViewModel.arduinoState.collectAsStateWithLifecycle()
+
+    // Filtro logico per mostrare solo gli oggetti in questo specifico locker
     val purchasesToRetrieve = remember(allPurchases, lockerId) {
         allPurchases.filter {
             it.lockerId == lockerId.toString() && it.dataRitiroEffettiva == null
@@ -74,13 +77,32 @@ fun RitiroScreen(
             contentPadding = PaddingValues(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+
+            // --- FEEDBACK STATO CONNESSIONE ---
+            if (arduinoStatus?.isConnected == false) {
+                item {
+                    Text(
+                        "Locker non raggiungibile. Verifica connessione.",
+                        color = Color.Red,
+                        fontSize = 12.sp,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
             // --- SEZIONE ACQUISTI ---
             if (purchasesToRetrieve.isNotEmpty()) {
                 item { SectionHeader("Prodotti Acquistati", Icons.Default.Inventory2) }
                 items(purchasesToRetrieve) { purchase ->
                     RitiroPurchaseCard(
                         purchase = purchase,
-                        onRitiroClick = { orderViewModel.confirmPurchasePickup(userId, purchase.id) }
+                        onRitiroClick = {
+                            // 1. Comando fisico di sblocco (Acquisto)
+                            arduinoViewModel.onGiveObjClicked()
+                            // 2. Aggiornamento stato DB
+                            orderViewModel.confirmPurchasePickup(userId, purchase.id)
+                        }
                     )
                 }
             }
@@ -91,7 +113,12 @@ fun RitiroScreen(
                 items(rentalsToRetrieve) { rental ->
                     RitiroRentalCard(
                         rental = rental,
-                        onRitiroClick = { orderViewModel.confirmStartRental(userId, rental.id) }
+                        onRitiroClick = {
+                            // 1. Comando fisico di sblocco (Noleggio)
+                            arduinoViewModel.onOpenDoorClicked()
+                            // 2. Aggiornamento stato DB (Timer/Data inizio)
+                            orderViewModel.confirmStartRental(userId, rental.id)
+                        }
                     )
                 }
             }
@@ -141,7 +168,7 @@ fun RitiroPurchaseCard(purchase: PurchaseEntity, onRitiroClick: () -> Unit) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(purchase.toolName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Acquisto definitivo", color = Color.Gray, fontSize = 12.sp)
+                Text("Cella: ${purchase.lockerId}", color = Color.Gray, fontSize = 12.sp)
             }
             Button(
                 onClick = onRitiroClick,
@@ -164,7 +191,7 @@ fun RitiroRentalCard(rental: RentalEntity, onRitiroClick: () -> Unit) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(rental.toolName, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Noleggio temporaneo", color = Color.Gray, fontSize = 12.sp)
+                Text("Cella: ${rental.lockerId}", color = Color.Gray, fontSize = 12.sp)
             }
             Button(
                 onClick = onRitiroClick,

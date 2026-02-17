@@ -2,66 +2,61 @@ package com.example.usetool.data.repository
 
 import com.example.usetool.data.dao.ArduinoDao
 import com.example.usetool.data.dao.ArduinoEntity
+import com.example.usetool.data.dto.ArduinoStateDto
 import com.example.usetool.data.network.DataSource
-import com.example.usetool.data.network.FirebaseProvider
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.collectLatest
 
 class ArduinoRepository(
-    private val arduinoDao: ArduinoDao,
-    private val dataSource: DataSource,      // Utilizzato per osservare i dati (Flow)
-    private val firebase: FirebaseProvider    // Utilizzato per scrivere i comandi (setValue)
+    private val dataSource: DataSource,
+    private val arduinoDao: ArduinoDao
 ) {
-    /**
-     * Espone lo stato hardware salvato localmente nel database Room.
-     */
-    val arduinoStatus: Flow<ArduinoEntity?> = arduinoDao.getArduinoStatus()
+
+    // Espone lo stato locale alla UI
+    fun getLocalStatus(): Flow<ArduinoEntity?> = arduinoDao.getArduinoStatus()
 
     /**
-     * Sincronizza lo stato da Firebase a Room.
-     * Questa è la funzione che mancava nel tuo frammento di codice.
+     * Sincronizza Firebase con Room.
+     * Quando i flag su Firebase cambiano, aggiorna il database locale.
      */
-    suspend fun syncStatusFromRemote() {
-        // Recupera l'ultimo valore emesso dal Flow nel DataSource
-        val remoteState = dataSource.observeArduinoState().firstOrNull()
+    suspend fun startSync() {
+        dataSource.observeArduino().collectLatest { dto ->
+            if (dto == null) return@collectLatest
 
-        if (remoteState != null) {
-            // Converte il DTO di Firebase nell'Entity di Room
+            // Trasforma il DTO di rete nell'Entity per il DB locale
             val entity = ArduinoEntity(
-                id = "current_status", // ID fisso per mantenere un'unica riga nel DB
-                isConnected = remoteState.isConnected,
-                openBuyDoor = remoteState.openBuyDoor,
-                openRentDoor = remoteState.openRentDoor,
+                isConnected = dto.isConnected ?: false,
+                openBuyDoor = dto.openBuyDoor ?: false,
+                openRentDoor = dto.openRentDoor ?: false,
                 lastSync = System.currentTimeMillis()
             )
-            // Inserisce o aggiorna nel database locale
+
             arduinoDao.insertStatus(entity)
         }
     }
 
     /**
-     * Gestisce l'apertura fisica inviando comandi al FirebaseProvider.
-     * Include un impulso di 3 secondi prima di resettare lo stato a false.
+     * Logica "OpenDoor": Imposta la flag per il noleggio (Rent) su Firebase.
      */
-    suspend fun openDoor(isRental: Boolean) {
-        val nodeName = if (isRental) "openRentDoor" else "openBuyDoor"
-        val doorRef = firebase.getArduinoRef().child(nodeName)
+    suspend fun openDoor() {
+        dataSource.updateNode("arduino/openRentDoor", true)
+    }
 
-        try {
-            // 1. Invia comando di apertura (true)
-            doorRef.setValue(true)
+    /**
+     * Logica "GiveObj": Imposta la flag per l'acquisto (Buy) su Firebase.
+     */
+    suspend fun giveObj() {
+        dataSource.updateNode("arduino/openBuyDoor", true)
+    }
 
-            // 2. Attesa impulso hardware (3 secondi) per permettere lo sblocco
-            delay(3000)
-
-            // 3. Reset dello stato (false) per non bruciare il solenoide/relè
-            doorRef.setValue(false)
-
-            // 4. Sincronizza il database locale per riflettere il cambio di stato
-            syncStatusFromRemote()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+    /**
+     * Reset manuale: riporta tutte le porte a stato chiuso su Firebase.
+     */
+    suspend fun resetAllDoors() {
+        val updates = mapOf(
+            "arduino/openRentDoor" to false,
+            "arduino/openBuyDoor" to false
+        )
+        dataSource.updateMultipleNodes(updates)
     }
 }
