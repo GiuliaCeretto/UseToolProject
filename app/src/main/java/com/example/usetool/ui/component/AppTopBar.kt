@@ -24,11 +24,6 @@ fun AppTopBar(navController: NavController) {
                 modifier = Modifier.size(width = 160.dp, height = 55.dp)
             )
         },
-        navigationIcon = {
-            IconButton(onClick = { /* apri impostazioni */ }) {
-                Icon(Icons.Default.Settings, contentDescription = "Impostazioni")
-            }
-        },
         actions = {
             IconButton(onClick = { navController.navigate(NavRoutes.Carrello.route) }) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = "Carrello")

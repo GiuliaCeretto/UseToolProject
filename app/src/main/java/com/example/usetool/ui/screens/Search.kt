@@ -146,6 +146,7 @@ fun SearchScreen(
                         modifier = Modifier
                             .height(520.dp)
                             .fillMaxWidth(),
+                        contentPadding = PaddingValues(bottom = 80.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {

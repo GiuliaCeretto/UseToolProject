@@ -130,8 +130,10 @@ fun Consulenza(
                         onClick = { selectedProfession = null },
                         label = { Text("Tutte", fontSize = 12.sp) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = YellowPrimary,
-                            containerColor = Green2.copy(alpha = 0.5f)
+                            selectedContainerColor = Green1,
+                            containerColor = Green2.copy(alpha = 0.5f),
+                            selectedLabelColor = Color.White,
+                            labelColor = Color.Black
                         )
                     )
                 }
@@ -141,8 +143,10 @@ fun Consulenza(
                         onClick = { selectedProfession = profession },
                         label = { Text(profession, fontSize = 12.sp) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = YellowPrimary,
-                            containerColor = Green2.copy(alpha = 0.5f)
+                            selectedContainerColor = Green1,
+                            containerColor = Green2.copy(alpha = 0.5f),
+                            selectedLabelColor = Color.White,
+                            labelColor = Color.Black
                         )
                     )
                 }

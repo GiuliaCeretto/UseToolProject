@@ -24,7 +24,7 @@ import com.example.usetool.R
 @Composable
 fun SearchToolCard(
     tool: ToolEntity,
-    calculatedDistance: Double?, // Parametro per i dati reali dal VM
+    calculatedDistance: Double?,
     onClick: () -> Unit
 ) {
     Card(
@@ -36,45 +36,94 @@ fun SearchToolCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
     ) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(tool.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Box {
 
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Image(
-                    painter = painterResource(id = R.drawable.placeholder_tool),
-                    contentDescription = null,
-                    modifier = Modifier.size(80.dp)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .padding(8.dp)
+                    .padding(top = 16.dp)
             ) {
-                // Formattazione dinamica della distanza
-                val distText = if (calculatedDistance != null)
-                    "${String.format("%.1f", calculatedDistance)} Km" else "-- Km"
 
                 Text(
-                    text = "$distText - ${tool.price}€/h",
-                    fontSize = 11.sp,
+                    tool.name,
                     fontWeight = FontWeight.Bold,
-                    color = BluePrimary
+                    fontSize = 14.sp
                 )
 
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = Color(0xFF1A237E),
-                    modifier = Modifier.size(24.dp)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
+                    Image(
+                        painter = painterResource(id = R.drawable.placeholder_tool),
                         contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.padding(4.dp)
+                        modifier = Modifier.size(80.dp)
                     )
                 }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    val distText = if (calculatedDistance != null)
+                        "${String.format("%.1f", calculatedDistance)} Km"
+                    else "-- Km"
+
+                    // 👇 Prezzo dinamico
+                    val priceText = if (tool.type == "noleggio")
+                        "€${tool.price}/ora"
+                    else
+                        "€${tool.price}"
+
+                    Text(
+                        text = "$distText - $priceText",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = BluePrimary
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = Color(0xFF1A237E),
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                }
+            }
+
+            // 👇 Badge Noleggio / Acquisto
+            val badgeColor = if (tool.type == "noleggio")
+                Color(0xFFE3F2FD)
+            else
+                Color(0xFFFFF8E1)
+
+            val textColor = if (tool.type == "noleggio")
+                Color(0xFF1976D2)
+            else
+                Color(0xFFFFA000)
+
+            Surface(
+                color = badgeColor,
+                shape = RoundedCornerShape(bottomStart = 8.dp),
+                modifier = Modifier.align(Alignment.TopEnd)
+            ) {
+                Text(
+                    text = tool.type.uppercase(),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor
+                )
             }
         }
     }
