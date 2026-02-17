@@ -52,6 +52,9 @@ class UserViewModel(
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
+    private val _logoutEvent = MutableSharedFlow<Unit>()
+    val logoutEvent = _logoutEvent.asSharedFlow()
+
     init {
         // 🔥 FIX: Verifica se l'utente è già loggato all'avvio del ViewModel
         // Se l'utente ha una sessione attiva, avviamo subito la sincronizzazione.
@@ -176,10 +179,22 @@ class UserViewModel(
 
     fun performFullLogout() {
         viewModelScope.launch {
-            userRepository.logout()
-            orderRepository.clearOrderHistory()
-            inventoryRepository.clearCache()
-            _loginState.value = LoginResult.Idle
+            try {
+                // 1. Pulizia dati (Repository e Firebase)
+                userRepository.logout()
+                orderRepository.clearOrderHistory()
+                inventoryRepository.clearCache()
+
+                // 2. Reset dello stato UI
+                _loginState.value = LoginResult.Idle
+
+                // 3. Lancio dell'evento di navigazione
+                _logoutEvent.emit(Unit)
+
+                Log.d("UserViewModel", "Logout eseguito correttamente")
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Errore durante il logout", e)
+            }
         }
     }
 

@@ -32,10 +32,6 @@ class UserRepository(
         }
     }
 
-    fun logout() {
-        firebaseAuth.signOut()
-    }
-
     suspend fun syncProfile(userId: String) {
         dataSource.observeProfile(userId).collectLatest { dto ->
             dto?.let {
@@ -89,5 +85,9 @@ class UserRepository(
             firebaseAuth.currentUser?.delete()?.await()
             Result.failure(e)
         }
+    }
+    suspend fun logout() {
+        firebaseAuth.signOut()
+        userDao.clearProfile() // Pulisce Room
     }
 }

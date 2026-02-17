@@ -23,6 +23,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.usetool.navigation.NavRoutes
 import com.example.usetool.ui.theme.BluePrimary
+import com.example.usetool.ui.viewmodel.LoginResult
 import com.example.usetool.ui.viewmodel.UserViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -32,12 +33,21 @@ fun ProfiloScreen(
     navController: NavController,
     userVm: UserViewModel
 ) {
-    // Osserviamo i dati reattivi da Room via UserViewModel
+    // 1. Ascolta l'evento di logout dal ViewModel
+    LaunchedEffect(Unit) {
+        userVm.logoutEvent.collect {
+            // Questo codice viene eseguito SOLO quando il ViewModel emette Unit
+            navController.navigate(NavRoutes.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    // Osserviamo i dati reattivi da Room
     val profile by userVm.userProfile.collectAsStateWithLifecycle()
     val allRentals by userVm.rentals.collectAsStateWithLifecycle()
     val purchases by userVm.purchases.collectAsStateWithLifecycle()
 
-    // Filtriamo i noleggi attivi per il box di gestione rapida
     val activeRentalsCount = remember(allRentals) {
         allRentals.count { it.statoNoleggio == "ATTIVO" }
     }
@@ -77,7 +87,7 @@ fun ProfiloScreen(
                 )
             }
 
-            // --- BOX GESTIONE NOLEGGIO ATTIVO ---
+            // --- BOX GESTIONE NOLEGGIO ---
             item {
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionBox(
@@ -89,10 +99,9 @@ fun ProfiloScreen(
                 )
             }
 
-            // --- SEZIONE STORICO NOLEGGI (Priorità Rental) ---
+            // --- STORICO NOLEGGI ---
             if (allRentals.isNotEmpty()) {
                 item { SectionHeader("Storico Noleggi") }
-
                 items(allRentals) { rental ->
                     val isRunning = rental.statoNoleggio == "ATTIVO"
                     HistoricalItemCard(
@@ -106,10 +115,9 @@ fun ProfiloScreen(
                 }
             }
 
-            // --- SEZIONE STORICO ACQUISTI ---
+            // --- STORICO ACQUISTI ---
             if (purchases.isNotEmpty()) {
                 item { SectionHeader("Storico Acquisti") }
-
                 items(purchases) { purchase ->
                     HistoricalItemCard(
                         title = purchase.toolName,
@@ -130,7 +138,7 @@ fun ProfiloScreen(
                     icon = Icons.AutoMirrored.Filled.ExitToApp,
                     modifier = Modifier.fillMaxWidth(0.7f),
                     color = Color(0xFFFFEBEE),
-                    onClick = { userVm.performFullLogout() }
+                    onClick = { userVm.performFullLogout() } // Chiama il ViewModel
                 )
             }
         }
