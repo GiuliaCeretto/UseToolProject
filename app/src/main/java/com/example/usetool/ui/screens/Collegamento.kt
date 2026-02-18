@@ -186,6 +186,8 @@ fun LinkingScreen(
                     Text("Digita il PIN del Locker #$selectedLockerLinkId", color = Color.Gray)
                 }
 
+
+                /*
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     repeat(5) { index ->
                         Box(
@@ -194,6 +196,8 @@ fun LinkingScreen(
                         )
                     }
                 }
+                */
+
 
                 // Tastierino con toni DTMF integrati
                 TastierinoNumerico(viewModel)

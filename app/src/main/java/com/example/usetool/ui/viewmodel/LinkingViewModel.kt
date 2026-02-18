@@ -73,11 +73,11 @@ class LinkingViewModel(
         _inputCode.value = ""
     }
 
-    // --- LOGICA PIN ---
+    /* --- LOGICA PIN ---
     fun addDigit(digit: Int) {
-        if (_inputCode.value.length < 4) {
+        if (_inputCode.value.length < 5) {
             _inputCode.value += digit.toString()
-            if (_inputCode.value.length == 4) {
+            if (_inputCode.value.length == 5) {
                 checkPin()
             }
         }
@@ -88,6 +88,7 @@ class LinkingViewModel(
             _inputCode.value = _inputCode.value.dropLast(1)
         }
     }
+
 
     private fun checkPin() {
         // Logica PIN: il PIN è uguale al LinkID del locker (es: Locker #1 -> PIN 1)
@@ -101,6 +102,8 @@ class LinkingViewModel(
             _inputCode.value = ""
         }
     }
+    */
+
 
     /**
      * 🔥 CONFERMA COLLEGAMENTO
