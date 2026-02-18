@@ -83,7 +83,6 @@ fun LinkingScreen(
     lockerIdsFromCart: List<Int>,
     cartViewModel: CartViewModel
 ) {
-    val inputCode by viewModel.inputCode.collectAsStateWithLifecycle()
     val isLinked by viewModel.isLinked.collectAsStateWithLifecycle()
     val connectedLockerName by viewModel.connectedLockerName.collectAsStateWithLifecycle()
     val selectedLockerLinkId by viewModel.selectedLockerLinkId.collectAsStateWithLifecycle()
@@ -98,7 +97,7 @@ fun LinkingScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (isLinked) {
-            // --- SCENARIO C: SEI COLLEGATO ---
+            // --- SCENARIO C: COLLEGAMENTO RIUSCITO ---
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -128,10 +127,7 @@ fun LinkingScreen(
                     Button(
                         onClick = {
                             selectedLockerLinkId?.let { id ->
-                                // 🔹 Aggiorna il carrello prima di navigare
                                 cartViewModel.refreshCart()
-
-                                // 🔹 Naviga alla schermata di pagamento
                                 navController.navigate(NavRoutes.Pagamento.createRoute(id))
                             }
                         },
@@ -182,20 +178,14 @@ fun LinkingScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.Lock, null, modifier = Modifier.size(64.dp), tint = BluePrimary)
+                    Spacer(Modifier.height(8.dp))
                     Text("Sblocco Locker", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                    Text("Digita il PIN del Locker #$selectedLockerLinkId", color = Color.Gray)
+                    // Specifichiamo che il PIN è di 5 cifre nel testo
+                    Text("Digita il PIN di 5 cifre per il Locker #$selectedLockerLinkId", color = Color.Gray)
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    repeat(5) { index ->
-                        Box(
-                            modifier = Modifier.size(20.dp).clip(CircleShape)
-                                .background(if (inputCode.length > index) BluePrimary else Color.LightGray)
-                        )
-                    }
-                }
+                // I PALLINI SONO STATI RIMOSSI DA QUI
 
-                // Tastierino con toni DTMF integrati
                 TastierinoNumerico(viewModel)
 
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

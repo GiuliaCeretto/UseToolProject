@@ -75,9 +75,9 @@ class LinkingViewModel(
 
     // --- LOGICA PIN ---
     fun addDigit(digit: Int) {
-        if (_inputCode.value.length < 4) {
+        if (_inputCode.value.length < 5) {
             _inputCode.value += digit.toString()
-            if (_inputCode.value.length == 4) {
+            if (_inputCode.value.length == 5) {
                 checkPin()
             }
         }
